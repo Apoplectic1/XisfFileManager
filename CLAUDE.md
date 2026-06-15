@@ -29,7 +29,7 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
 
 - **`dev`** — active development branch (default; new work lands here).
 - **`main`** — stable/release branch; merge `dev` into `main` when cutting a release.
-- Releases are tag-triggered: pushing an annotated `vX.Y.Z` tag runs `.github/workflows/release.yml`, which injects the tag into `AssemblyInformationalVersion` (shown in the window title). Latest released tag: `v1.5.0`.
+- Releases are tag-triggered: pushing an annotated `vX.Y.Z` tag runs `.github/workflows/release.yml`, which injects the tag into `AssemblyInformationalVersion` (shown in the window title). Latest released tag: `v1.8.0`.
 
 ## Project Architecture
 
