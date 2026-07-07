@@ -19,7 +19,7 @@
    startup via Velopack (`MainForm.CheckForUpdatesAsync`) — a tag push propagates to installed
    apps on their next launch.
 
-Latest released tag: **`v1.8.0`**.
+Latest released tag: **`v1.8.1`**.
 
 ## GitHub policy
 

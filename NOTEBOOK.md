@@ -10,7 +10,8 @@
 - **TS database access is read-only in code** — the only SQL that executes is `SELECT * FROM {table}`
   (`SqlLiteReader.cs:45`); `SqlLiteWriter.WriteDatabaseFile` is uncalled `your_table` boilerplate and
   `SqlLiteUpdater` is an empty stub. Docs (and portfolio map) had claimed graded-count write-back →
-  ROADMAP follow-up #10 (numbered #12 when first filed; #10/#11 were fixed same day and renumbered).
+  now the ROADMAP "TS graded-count write-back" follow-up (filed as #12; renumbered twice same day
+  as neighbors closed — find it by name, not number).
 - **`RemoveKeyword` matching is case-sensitive** (`KeywordList.cs:137`, plain `Equals`) — keyword-name
   casing must match what setters write (e.g. `"CREJECT"`, `KeywordList.cs:331`).
 - **`RiccardiReductionFactor = 0.75` is dead code** — each telescope hardcodes its reduced focal

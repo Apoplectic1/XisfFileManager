@@ -45,5 +45,5 @@ with `"REJECT  "` so they sort together and stand out visually. Full analysis:
 
 XFM is one app in the Astronomy portfolio (see the parent `../CLAUDE.md` map). It reads the Target
 Scheduler plugin's database directly (`schedulerdb.sqlite` on BIRDWATCHER; accepted counts —
-write-back not implemented, ROADMAP follow-up #10). Long-term, the Target Scheduler tab migrates to
-the TSM app and XFM consumes `Catalog.db` read-only via `Astronomy.Catalog` (ROADMAP follow-up #8).
+write-back not implemented, ROADMAP follow-up #9). Long-term, the Target Scheduler tab migrates to
+the TSM app and XFM consumes `Catalog.db` read-only via `Astronomy.Catalog` (ROADMAP follow-up #7).

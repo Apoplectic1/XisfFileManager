@@ -128,7 +128,7 @@ Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are
 ProfilePreference, Project, Target, ExposurePlan, ExposureTemplate, AcquiredImage, RuleWeight,
 ImageData; table models in `TargetScheduler/Tables/`. `SqlLiteWriter`/`SqlLiteUpdater` are
 placeholder stubs with no call sites — graded-count write-back is not implemented (ROADMAP
-follow-up #10).
+follow-up #9).
 
 ## Code conventions
 
