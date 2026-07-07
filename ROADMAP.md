@@ -1,7 +1,7 @@
 # XISF File Manager — Roadmap
 
-Living priority list. Code structure and full history live in `CLAUDE.md` and git;
-this file tracks what's next and what recently shipped. Keep entries short.
+> **Charter:** Living priority list — what's next and what recently shipped. Keep entries short.
+> Code structure lives in `ARCHITECTURE.md`; full history lives in git.
 
 ## Open follow-ups
 
@@ -13,11 +13,11 @@ this file tracks what's next and what recently shipped. Keep entries short.
 6. **Compress thumbnail/ICC blocks** — only the main image attachment is compressed today; thumbnail/ICC blocks are stripped or copied as-is.
 7. **Verify input checksums on read** — XFM writes SHA-1 checksums but does not validate an existing block's checksum on load; could warn on mismatch (corruption detection).
 8. **Target Scheduler tab → TSM (future, ecosystem)** — XFM's `MainForm/TargetScheduler.*` + `CustomTreeView` are slated to migrate into the **TargetSchedulerManager (TSM)** app (renamed from TargetCatalogManager 2026-06-11), after which XFM reads `Catalog.db` read-only via `Astronomy.Catalog` (`GetShotTargets()` = the actual-only view; XFM only ever deals with shot targets). The catalog foundation this depends on is now built — `Astronomy.Catalog` reconciles disk (actual) ↔ TS (plan) onto one canonical target with goal-vs-actual. Note `Catalog.db` is now the planned **LCM**'s output (TSM is app-only). Not started here; tracked in `TargetSchedulerManager/ROADMAP.md`.
-9. **Multi-camera Set All — report skipped files** — `Button_KeywordCamera_SetAll_Click` routes each file to the checked camera its `INSTRUME` matches; in a multi-camera load, files matching no checked camera are left untouched. Surface a count of those skipped files (status area) so un-keyworded frames don't vanish silently. Background: `docs/camera-colorization-multicamera-investigation.md` (open decision #1).
+9. **Multi-camera Set All — report skipped files** — `Button_KeywordCamera_SetAll_Click` routes each file to the checked camera its `INSTRUME` matches; in a multi-camera load, files matching no checked camera are left untouched. Surface a count of those skipped files (status area) so un-keyworded frames don't vanish silently. Background: `docs/2026-06-14-camera-colorization-multicamera-investigation.md` (open decision #1).
 
 ## Recently shipped
 
-- **Multi-camera Set All** — Camera-tab "Set All" no longer bails when more than one camera is checked. One camera checked = unchanged (force identity onto every loaded file); two or more = each file is routed by `INSTRUME` to its matching camera's row and forced per-camera (Z533 files get the Z533 row, Z183 the Z183 row), generalizing to any number of cameras. Files matching no checked camera are left untouched (reporting them is open follow-up #9). Investigation + deferred colorization/validity-color work captured in `docs/camera-colorization-multicamera-investigation.md`.
+- **Multi-camera Set All** — Camera-tab "Set All" no longer bails when more than one camera is checked. One camera checked = unchanged (force identity onto every loaded file); two or more = each file is routed by `INSTRUME` to its matching camera's row and forced per-camera (Z533 files get the Z533 row, Z183 the Z183 row), generalizing to any number of cameras. Files matching no checked camera are left untouched (reporting them is open follow-up #9). Investigation + deferred colorization/validity-color work captured in `docs/2026-06-14-camera-colorization-multicamera-investigation.md`.
 - **Tidied redundant `using` directives** — removed explicit usings already provided by `ImplicitUsings` (and an unused `System.Reflection.Metadata`) from `KeywordList.cs`, `MainForm.cs`, `XisfFileUpdate.cs`, and `Xml.cs`, clearing the CS8019/CS8933 IDE noise (closes former follow-up #3).
 - **XISF image-block compression (`zlib+sh` + SHA-1)** — saves now compress the image data block when it isn't already compressed, matching the PixInsight/NINA on-disk format (byte-shuffle → zlib max level → SHA-1 over the compressed bytes). Already-compressed blocks (any codec) are copied verbatim and never re-compressed. Pure-managed codec in `Files/Compression/` (`XisfBlockCompression` + `BlockCompressionInfo`) using built-in `System.IO.Compression.ZLibStream` + `System.Security.Cryptography` — no native/PCL dependency. "Update Keywords" is now save-if-needed (a keyword change **or** an uncompressed block); the status line breaks out compressed / already-compressed counts. Writes go via a temp file + atomic move.
 - **Released `v1.5.0`** — merged `dev` → `main` and tagged; tag-triggered `release.yml` build.
