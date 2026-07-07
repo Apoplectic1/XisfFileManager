@@ -21,6 +21,7 @@
 
 ## Recently shipped
 
+- **CREJECT keyword purge** — `CREJECT` (WBPP post-processing group marker) added to `RemoveUnwantedKeywords`, and the calibration-files ClearAll handler removes it outright instead of writing an empty value.
 - **Docs-architecture adoption + full doc audit (2026-07-07)** — CLAUDE.md became a thin router; mechanics moved to `ARCHITECTURE.md`, domain context to `DOMAIN.md`; scaffolded `VERIFICATION.md`/`NOTEBOOK.md`/`RELEASING.md`/`README.md`. A 42-flag fan-out audit then corrected doc↔code drift (TS access is read-only; zlib fallback; FOCRATIO gotcha layer) and surfaced follow-ups #10-#13.
 - **Released `v1.8.0`, `v1.7.1`, `v1.6.0`** — tag-triggered Velopack releases (dev → main merges).
 - **Velopack release pipeline + in-app self-update** — `release.yml` publishes self-contained win-x64, packages with `vpk pack`, uploads installer/update assets to GitHub Releases; the app checks for updates at startup (`MainForm.CheckForUpdatesAsync`) and shows the version in the window title.

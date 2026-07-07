@@ -806,6 +806,7 @@ namespace XisfFileManager
             RemoveKeyword("AOCAMBT");
             RemoveKeyword("COMMENT");
             RemoveKeyword("Camera");
+            RemoveKeyword("CREJECT");
             RemoveKeyword("DATE-END");
             RemoveKeyword("DBLKEYWD");
             RemoveKeyword("FILENAME");

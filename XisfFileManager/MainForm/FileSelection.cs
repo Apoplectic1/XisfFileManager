@@ -303,8 +303,8 @@ namespace XisfFileManager
                 file.CBIAS = string.Empty;
                 file.CPANEL = string.Empty;
                 file.CSTARS = string.Empty;
-                file.CREJECT = string.Empty;
                 file.RemoveKeyword("CLIGHT");
+                file.RemoveKeyword("CREJECT");
             }
         }
     }
