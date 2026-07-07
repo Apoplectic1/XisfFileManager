@@ -4,8 +4,8 @@
 > priorities live in the docs below.
 
 Windows Forms (.NET 10) app for managing XISF astrophotography image libraries: bulk FITS-keyword
-normalization, canonical renaming, `zlib+sh` block compression on save, graded-count write-back to
-the N.I.N.A. Target Scheduler database, and a calibration-frame library.
+normalization, canonical renaming, image-block compression on save, a read-only N.I.N.A. Target
+Scheduler database viewer (write-back not implemented — see ROADMAP), and a calibration-frame library.
 
 ## Doc map
 
@@ -17,7 +17,7 @@ the N.I.N.A. Target Scheduler database, and a calibration-frame library.
 | `VERIFICATION.md` | How to verify a change (no test project — build + manual in-app pass) |
 | `NOTEBOOK.md` | Lab notebook: chronological empirical findings |
 | `RELEASING.md` | dev→main flow, `vX.Y.Z` tag-triggered releases, GitHub push policy |
-| `docs/` | Journal: dated records `YYYY-MM-DD-<slug>.md` (investigations, decisions) — discover via glob/grep, not enumerated here |
+| `docs/` | Journal: dated records `YYYY-MM-DD-<slug>.md` (investigations, decisions) — discover via glob/grep, not enumerated here. Also holds `FITS Keyword Standards.pdf` (reference asset) |
 
 Portfolio map (sibling repos, shared library, data-flow hubs): `../CLAUDE.md`.
 
@@ -30,18 +30,21 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
 
 ## Load-bearing gotchas
 
-- **`KeywordList.FocalRatio` setter self-derives** FOCRATIO from the FOCALLEN/APTDIA keywords,
-  ignoring its assigned value — FOCALLEN and APTDIA must be written first.
-- **`XisfFileUpdate.UpdateFileAsync` is save-if-needed:** `PROTECT` never writes; `UPDATE_NEW`
-  writes when keywords changed **or** the block is uncompressed; `FORCE` always writes. Saves
-  rewrite files in place (temp file + atomic move) — see cautions in `VERIFICATION.md`.
+- **`XisfFile.FocalRatio` setter self-derives** FOCRATIO from the file's FocalLength/ApertureDiameter,
+  ignoring its assigned value (`XisfFile.cs:259`; `KeywordList`'s setter just stores what it's given) —
+  FOCALLEN and APTDIA must be written first.
+- **`XisfFileUpdate.UpdateFileAsync` is save-if-needed:** `PROTECT` never writes (contract — but
+  enforcement lives at call sites and FluxDensity/Calibration bypass it, ROADMAP follow-up #10);
+  `UPDATE_NEW` writes when keywords changed **or** the block is uncompressed; `FORCE` always writes.
+  Saves rewrite files in place (temp file + atomic move) — see cautions in `VERIFICATION.md`.
 - **`APTAREA` is optimistic:** full circular π·r², obstructions ignored — don't trust it for
   SNR/throughput math on the Newtonian (ROADMAP follow-up #2).
-- **Legacy `EXPOSURE` is normalized to `EXPTIME`** and purged on update.
+- **Legacy `EXPOSURE` is normalized to `EXPTIME`** and purged on update (contract — but the value is
+  dropped when EXPTIME already exists, silently discarding Camera Set All edits; ROADMAP follow-up #11).
 - Naming: `m` private fields, `b` booleans, `e` enums, `Type_Underscore_Names` for controls
   (full conventions in `ARCHITECTURE.md`).
 
 ## Excluded from docs governance
 
-`packages/` (vendored NuGet), `TestData/` (sample inputs), `Archive/` (retired code, archival-only),
-`bin`/`obj` (generated), `.claude/`.
+`packages/` (dead packages.config-era leftover — nothing references it; deletable), `TestData/`
+(sample inputs), `Archive/` (retired code, archival-only), `bin`/`obj` (generated), `.claude/`.

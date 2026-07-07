@@ -8,21 +8,26 @@ Serialization Format) astrophotography images.
 - Bulk-reads XISF metadata and normalizes/repairs FITS keywords (camera, telescope, capture
   software, exposure) across an image library
 - Renames files to a canonical scheme (with `REJECT` flagging of stacked-out subframes)
-- Compresses image blocks on save to the PixInsight/NINA `zlib+sh` + SHA-1 format
-- Tracks graded/accepted image counts in the N.I.N.A. Target Scheduler database
+- Compresses image blocks on save to the PixInsight/NINA compressed format (zlib + SHA-1)
+- Displays N.I.N.A. Target Scheduler projects, targets, and accepted-image counts from the
+  scheduler database
 - Maintains a calibration-frame library
 
-## Build & run
+## Install or build
+
+Releases are Velopack installers published as GitHub Release assets — download the latest from the
+Releases page; installed copies self-update at startup. Or build from source:
 
 ```bash
 dotnet build XisfFileManager.sln -c Release
 dotnet run --project XisfFileManager/XisfFileManager.csproj
 ```
 
-Requires the .NET 10 SDK on Windows. Releases are tagged `vX.Y.Z` and built by GitHub Actions
+Requires the .NET 10 SDK on Windows. Releases are tagged `vX.Y.Z` and packaged by GitHub Actions
 (see `RELEASING.md`).
 
 ## Documentation
 
 `CLAUDE.md` is the doc router: `ARCHITECTURE.md` (mechanics), `DOMAIN.md` (astronomy context),
-`ROADMAP.md` (priorities), `VERIFICATION.md` (how to verify a change), `docs/` (dated notes).
+`ROADMAP.md` (priorities), `VERIFICATION.md` (how to verify a change), `RELEASING.md` (releases),
+`NOTEBOOK.md` (lab notebook), `docs/` (dated notes).

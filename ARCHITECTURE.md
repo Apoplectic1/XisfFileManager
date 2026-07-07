@@ -9,7 +9,11 @@
 - **Nullable reference types** enabled (0 warnings)
 - **SQLite** via Microsoft.Data.Sqlite for the Target Scheduler database
 - **MathNet.Numerics** for scientific calculations
-- **GeoTimeZone/TimeZoneConverter** for timezone handling
+- **Velopack** for release packaging and in-app self-update (`Program.cs` `VelopackApp.Build().Run()`;
+  startup `CheckForUpdatesAsync` in `MainForm.cs` pulls from GitHub Releases — see `RELEASING.md`)
+- **WindowsAPICodePack** (Core/Shell) for the folder-browse dialogs (`Directories/DirectoryOperations.cs`)
+- Timezone handling uses built-in `TimeZoneInfo`. (`GeoTimeZone`/`TimeZoneConverter` are referenced
+  in the csproj but never called — removal candidates.)
 
 All planned refactoring phases are complete (.NET 10 upgrade, camera/telescope/capture-software
 abstractions, async/await, nullable annotations, CA cleanup). Details preserved in git history.
@@ -48,8 +52,9 @@ XisfFileManager/
 │   └── XML/Xml.cs      # XML metadata utilities
 ├── Keyword/            # Keyword.cs (Name/Value/Comment), KeywordList.cs (typed accessors)
 ├── Calibration/        # Calibration frame library
-├── TargetScheduler/    # N.I.N.A. Target Scheduler SQLite integration
-│   ├── SqlLiteManager.cs / SqlLiteReader.cs / SqlLiteWriter.cs
+├── TargetScheduler/    # N.I.N.A. Target Scheduler SQLite integration (read-only today)
+│   ├── SqlLiteManager.cs / SqlLiteReader.cs # orchestration + SELECT reads
+│   ├── SqlLiteWriter.cs / SqlLiteUpdater.cs # uncalled template / empty stub (no write path yet)
 │   └── Tables/         # Database table models
 ├── Calculations/       # Image statistics and math
 ├── Directories/        # Directory traversal and properties
@@ -64,19 +69,22 @@ XISF files contain an XML metadata header with FITS-compatible keywords, binary 
 
 XFM treats the image data block as an **opaque byte array** — nothing in the app decodes pixels
 (statistics/calculations all come from FITS keywords). On save it compresses an uncompressed block
-to `zlib+sh` with a SHA-1 checksum; an already-compressed block (any codec) is copied verbatim.
+to `zlib+sh` (plain `zlib`, no shuffle, for 1-byte samples) with a SHA-1 checksum; an
+already-compressed block (any codec) is copied verbatim.
 
 ### Compression (`Files/Compression/`)
 
 - `XisfBlockCompression` — pure, UI-free codec: byte-shuffle → `System.IO.Compression.ZLibStream`
   (`SmallestSize` ≈ zlib level 9 ≈ PixInsight "level 100") → SHA-1 over the compressed bytes.
-  `Compress`/`Decompress` are symmetric; `Decompress` is present for tests and future pixel I/O but
-  is not yet wired into any runtime path (XFM blocks are opaque).
-- `BlockCompressionInfo` — parses/formats the `compression="zlib+sh:size:itemSize"` and
-  `checksum="sha-1:hex"` attributes; read at load time into `XisfFile.Compression` / `IsImageCompressed`.
+  `Compress`/`Decompress` are symmetric; `Decompress` is present for future pixel I/O but is not yet
+  wired into any runtime path (XFM blocks are opaque; no test project exists — see `VERIFICATION.md`).
+- `BlockCompressionInfo` — parses/formats both codec grammars, `compression="zlib+sh:size:itemSize"`
+  and `compression="zlib:size"`, plus `checksum="sha-1:hex"`; read at load time into
+  `XisfFile.Compression` / `IsImageCompressed`.
 - Item size (bytes/sample for the shuffle) comes from the `sampleFormat` attribute, falling back to
-  `blockLength / (W×H×channels)` from `geometry`. Shuffle is always written (`zlib+sh`); a wrong item
-  size only costs ratio, never correctness, since it is recorded in the attribute and used on read.
+  `blockLength / (W×H×channels)` from `geometry`. Shuffle is applied when item size > 1 (`zlib+sh`);
+  1-byte samples take the no-shuffle branch and write plain `zlib`. A wrong item size only costs
+  ratio, never correctness, since it is recorded in the attribute and used on read.
 - Always stores the compressed result (even if not smaller) so a block marks itself done and isn't
   re-attempted on every save.
 
@@ -86,8 +94,10 @@ Keywords follow FITS conventions with Name/Value/Comment triplets. Keywords XFM 
 (astronomy semantics behind them: `DOMAIN.md`):
 
 - `IMAGETYP`: Frame type (Light, Dark, Flat, Bias)
-- `FILTER`: Filter name (L, R, G, B, Ha, OIII, SII)
-- `EXPTIME`: Exposure time in seconds (standard; legacy `EXPOSURE` is normalized to this and purged)
+- `FILTER`: Filter name — stored as L, R, G, B, H, O, S, Shutter (inbound capture-software spellings
+  like Ha/OIII/SII are collapsed to the single letter by the `FilterName` setter)
+- `EXPTIME`: Exposure time in seconds (standard; legacy `EXPOSURE` is normalized to this and purged —
+  contract with a known gap: the value is dropped when EXPTIME already exists, ROADMAP follow-up #11)
 - `CCD-TEMP`: Sensor temperature
 - `OBJECT`: Target name
 - `SWCREATE`: Capture software (NINA, TSX, SGP, VOY, SCP)
@@ -105,12 +115,20 @@ Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are
 - `eFilter`: L, R, G, B, H, O, S, SHUTTER, ALL, EMPTY
 - `eOrder`: File ordering (INDEX, WEIGHT, WEIGHTINDEX, INDEXWEIGHT)
 - `eKeywordUpdateMode`: PROTECT, UPDATE_NEW, FORCE
+- `eUpdateOutcome`: result reporting for `XisfFileUpdate.LastUpdateOutcome`
+- `eMessageMode`, `eBufferData`, `eProjectPriority`, `eUiState`: messaging/buffer/TS-priority/UI state
+- Two enums live outside Globals.cs: `BlockCodec` (`Files/Compression/BlockCompressionInfo.cs`) and
+  `ExcludeType` (`Directories/DirectoryOperations.cs`) — both without the `e` prefix
 
 ## Target Scheduler integration
 
-Reads/writes the N.I.N.A. Target Scheduler SQLite database (`scheduler.db`): Projects, Targets,
-Exposure Plans, Acquired Images tracking, Profile Preferences. Table models are in
-`TargetScheduler/Tables/` — each maps to a N.I.N.A. Target Scheduler table.
+**Read-only today.** Loads the N.I.N.A. Target Scheduler SQLite database — hardcoded to
+`\\BIRDWATCHER\SchedulerPlugin\schedulerdb.sqlite` (`MainForm/TargetScheduler.Tree.cs`) — via
+`SELECT` only (`SqlLiteReader.cs`). Eight tables are mapped (`Data/TableMappers.cs`):
+ProfilePreference, Project, Target, ExposurePlan, ExposureTemplate, AcquiredImage, RuleWeight,
+ImageData; table models in `TargetScheduler/Tables/`. `SqlLiteWriter`/`SqlLiteUpdater` are
+placeholder stubs with no call sites — graded-count write-back is not implemented (ROADMAP
+follow-up #12).
 
 ## Code conventions
 
@@ -133,6 +151,9 @@ Exposure Plans, Acquired Images tracking, Profile Preferences. Table models are 
   when keywords changed **or** the block is uncompressed; `FORCE` always writes. It always
   re-serializes the XML header and either compresses an uncompressed block or copies an
   already-compressed one verbatim. `LastUpdateOutcome` reports the result for status counts.
+  **Known gap:** the PROTECT guard is enforced by the MainForm save loop, not inside
+  `UpdateFileAsync` itself — the FluxDensity and Calibration call sites bypass it (ROADMAP
+  follow-up #10).
 
 ### Important files
 
@@ -140,8 +161,9 @@ Exposure Plans, Acquired Images tracking, Profile Preferences. Table models are 
   on MainForm as `mWorkspace` and read by every feature partial
 - `Files/XisfFile.cs`: Central model — all keyword access flows through here
 - `Keyword/KeywordList.cs`: Typed property accessors for common FITS keywords. Note: the
-  `FocalRatio` setter self-derives FOCRATIO from the FOCALLEN/APTDIA keywords (ignoring its assigned
-  value), so those must be written first.
+  discard-and-recompute FOCRATIO gotcha lives one layer up — `XisfFile.FocalRatio`'s setter ignores
+  its assigned value and recomputes FocalLength ÷ ApertureDiameter (`XisfFile.cs:259`); KeywordList's
+  own setter stores the value it's given. FOCALLEN and APTDIA must be written first either way.
 - `Models/CameraConfiguration.cs` / `Services/CameraService.cs`: camera config base + detection,
   property analysis, UI color helpers
 - `Models/TelescopeConfiguration.cs` / `Services/TelescopeService.cs`: telescope config base with
@@ -153,10 +175,10 @@ Exposure Plans, Acquired Images tracking, Profile Preferences. Table models are 
   SHA-1 image-block codec and its attribute parser/formatter (see Compression above)
 - `Helpers/UIHelpers.cs`: Common UI control manipulation (ClearComboBox, ResetRadioButton, etc.)
 - `MainForm.Designer.cs`: Auto-generated UI — TabIndex values manually fixed for proper navigation
-- `Globals/Globals.cs`: All enums and constants
+- `Globals/Globals.cs`: Shared enums and global constants (two enums live elsewhere — see Enums above)
 - `Configuration/AppPaths.cs`: Machine-specific paths (E:\, F:\ drives)
 - `Configuration/XisfConstants.cs`: XISF signature size, max buffer size, and compression/checksum
-  codec names (`zlib+sh`, `sha-1`)
+  codec names (`zlib+sh`, plain-`zlib` fallback for 1-byte samples, `sha-1`)
 - `Configuration/DirectoryFilters.cs`: Exclude lists for directory filtering
 
 ## Common tasks

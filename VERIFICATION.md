@@ -28,7 +28,9 @@ build-verified vs. what still needs a human in-app check.
 
 - Keyword updates **rewrite XISF files in place** (temp file + atomic move). Test against copies or
   `TestData/`, not the live image library, unless the write is the thing being verified.
-- Target Scheduler operations touch `scheduler.db`; `TestData/schedulerdb.sqlite` is the safe target.
+- Target Scheduler access is read-only (`SELECT` only) but hardcoded to
+  `\\BIRDWATCHER\SchedulerPlugin\schedulerdb.sqlite` (`MainForm/TargetScheduler.Tree.cs`) — there is
+  no setting to retarget it, so pointing at `TestData/schedulerdb.sqlite` requires a code edit.
 
 ## CI
 
