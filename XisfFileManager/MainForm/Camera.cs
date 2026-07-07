@@ -160,6 +160,11 @@ public partial class MainForm
             BindAnalysisToComboBox(_cameraBinningComboBoxes![camera], binningAnalysis);
         }
 
+        // Camera-identity header, same convention as the value headers: red = any file with a
+        // missing/blank/unknown INSTRUME, green = all resolved across 2+ cameras, black = one camera
+        var (anyUnresolved, multipleCameras) = CameraService.AnalyzeCameraResolution(mFileList);
+        Label_KeywordUpdateTab_Camera_Camera.ForeColor = CameraService.GetLabelColor(anyUnresolved, false, multipleCameras);
+
         // Update aggregate label colors
         UpdateLabelFromAnalyses(Label_KeywordUpdateTab_Camera_Seconds, secondsAnalyses);
         UpdateLabelFromAnalyses(Label_KeywordUpdateTab_Camera_Gain, gainAnalyses);

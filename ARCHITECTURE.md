@@ -128,7 +128,7 @@ Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are
 ProfilePreference, Project, Target, ExposurePlan, ExposureTemplate, AcquiredImage, RuleWeight,
 ImageData; table models in `TargetScheduler/Tables/`. `SqlLiteWriter`/`SqlLiteUpdater` are
 placeholder stubs with no call sites — graded-count write-back is not implemented (ROADMAP
-follow-up #9).
+follow-up #8).
 
 ## Code conventions
 
@@ -164,7 +164,9 @@ follow-up #9).
   its assigned value and recomputes FocalLength ÷ ApertureDiameter (`XisfFile.cs:259`); KeywordList's
   own setter stores the value it's given. FOCALLEN and APTDIA must be written first either way.
 - `Models/CameraConfiguration.cs` / `Services/CameraService.cs`: camera config base + detection,
-  property analysis, UI color helpers
+  property analysis, UI color helpers. Header/label color convention: red = missing/unresolved
+  values, green = legitimately different values (e.g. multi-camera), black = uniform;
+  `AnalyzeCameraResolution` drives the Camera-identity header
 - `Models/TelescopeConfiguration.cs` / `Services/TelescopeService.cs`: telescope config base with
   reducer support (`ApplyKeywords` emits TELESCOP/FOCALLEN/APTDIA/APTAREA and triggers FOCRATIO) +
   detection, analysis, UI color helpers

@@ -39,6 +39,30 @@ public class CameraService
     }
 
     /// <summary>
+    /// Analyze camera-identity resolution across a file list. A file is unresolved when its
+    /// INSTRUME/Camera value is missing, blank, or matches no registered camera model.
+    /// </summary>
+    public static (bool AnyUnresolved, bool MultipleCameras) AnalyzeCameraResolution(IEnumerable<XisfFile> files)
+    {
+        bool anyUnresolved = false;
+        var resolvedCameras = new HashSet<CameraConfiguration>();
+
+        foreach (var file in files)
+        {
+            var camera = string.IsNullOrWhiteSpace(file.Camera)
+                ? null
+                : AllCameras.FirstOrDefault(c => c.MatchesCamera(file.Camera));
+
+            if (camera == null)
+                anyUnresolved = true;
+            else
+                resolvedCameras.Add(camera);
+        }
+
+        return (anyUnresolved, resolvedCameras.Count > 1);
+    }
+
+    /// <summary>
     /// Get files matching a specific camera
     /// </summary>
     public static IEnumerable<XisfFile> GetFilesForCamera(IEnumerable<XisfFile> files, CameraConfiguration camera) =>
