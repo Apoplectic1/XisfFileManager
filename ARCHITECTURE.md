@@ -96,8 +96,9 @@ Keywords follow FITS conventions with Name/Value/Comment triplets. Keywords XFM 
 - `IMAGETYP`: Frame type (Light, Dark, Flat, Bias)
 - `FILTER`: Filter name — stored as L, R, G, B, H, O, S, Shutter (inbound capture-software spellings
   like Ha/OIII/SII are collapsed to the single letter by the `FilterName` setter)
-- `EXPTIME`: Exposure time in seconds (standard; legacy `EXPOSURE` is normalized to this and purged —
-  contract with a known gap: the value is dropped when EXPTIME already exists, ROADMAP follow-up #11)
+- `EXPTIME`: Exposure time in seconds (standard). The `ExposureSeconds` setter writes EXPTIME and
+  removes any legacy `EXPOSURE`; `NormalizeExposure` converts a legacy-only `EXPOSURE` to EXPTIME
+  at save and purges it
 - `CCD-TEMP`: Sensor temperature
 - `OBJECT`: Target name
 - `SWCREATE`: Capture software (NINA, TSX, SGP, VOY, SCP)
@@ -128,7 +129,7 @@ Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are
 ProfilePreference, Project, Target, ExposurePlan, ExposureTemplate, AcquiredImage, RuleWeight,
 ImageData; table models in `TargetScheduler/Tables/`. `SqlLiteWriter`/`SqlLiteUpdater` are
 placeholder stubs with no call sites — graded-count write-back is not implemented (ROADMAP
-follow-up #12).
+follow-up #10).
 
 ## Code conventions
 
@@ -150,10 +151,9 @@ follow-up #12).
 - `XisfFileUpdate.UpdateFileAsync` is **save-if-needed**: `PROTECT` never writes; `UPDATE_NEW` writes
   when keywords changed **or** the block is uncompressed; `FORCE` always writes. It always
   re-serializes the XML header and either compresses an uncompressed block or copies an
-  already-compressed one verbatim. `LastUpdateOutcome` reports the result for status counts.
-  **Known gap:** the PROTECT guard is enforced by the MainForm save loop, not inside
-  `UpdateFileAsync` itself — the FluxDensity and Calibration call sites bypass it (ROADMAP
-  follow-up #10).
+  already-compressed one verbatim. `LastUpdateOutcome` reports the result for status counts
+  (`Protected` = refused by the PROTECT gate). The PROTECT guard lives inside `UpdateFileAsync`;
+  deliberate write paths (Calibration masters, FluxDensity export copies) set `FORCE` before calling.
 
 ### Important files
 

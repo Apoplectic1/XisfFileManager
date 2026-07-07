@@ -56,7 +56,7 @@ namespace XisfFileManager.Files
             // Normalize capture time: DATE-OBS (UTC) -> DATE-LOC (local)
             KeywordList.NormalizeCaptureTime();
 
-            // Normalize exposure: EXPTIME -> EXPOSURE
+            // Normalize exposure: legacy EXPOSURE -> standard EXPTIME
             KeywordList.NormalizeExposure();
         }
 

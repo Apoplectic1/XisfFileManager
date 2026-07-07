@@ -337,19 +337,24 @@ namespace XisfFileManager
         {
             get
             {
-                // Try EXPOSURE first (read-only, no keyword modification)
-                string value = GetKeywordValue("EXPOSURE");
+                // Standard EXPTIME first (read-only, no keyword modification)
+                string value = GetKeywordValue("EXPTIME");
                 if (value != string.Empty && double.TryParse(value, out double exposure))
                     return exposure;
 
-                // Fall back to EXPTIME (read-only, no keyword modification)
-                value = GetKeywordValue("EXPTIME");
+                // Fall back to legacy EXPOSURE (files not yet normalized)
+                value = GetKeywordValue("EXPOSURE");
                 if (value != string.Empty && double.TryParse(value, out exposure))
                     return exposure;
 
                 return 0.0;
             }
-            set { AddKeyword("EXPOSURE", value.ToString(), "[seconds] Imaging Camera Exposure Time"); }
+            set
+            {
+                // Write the standard keyword; drop any legacy EXPOSURE so it can't shadow the new value
+                RemoveKeyword("EXPOSURE");
+                AddKeyword("EXPTIME", value.ToString(), "[s] Imaging Camera Exposure Time");
+            }
         }
 
         // *********************************************************************************************************

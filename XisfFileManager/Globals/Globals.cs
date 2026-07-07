@@ -24,9 +24,10 @@ namespace XisfFileManager.Globals
     public enum eKeywordUpdateMode { PROTECT, UPDATE_NEW, FORCE }
 
     // Result of a single file save (XisfFileUpdate.UpdateFileAsync) for status reporting.
-    // Failed = write error; Skipped = nothing to do (UPDATE_NEW, keywords match, already compressed);
-    // Compressed = block was uncompressed and got zlib+sh compressed; AlreadyCompressed = block copied verbatim.
-    public enum eUpdateOutcome { Failed, Skipped, Compressed, AlreadyCompressed }
+    // Failed = write error; Protected = PROTECT mode, never written; Skipped = nothing to do
+    // (UPDATE_NEW, keywords match, already compressed); Compressed = block was uncompressed and got
+    // compressed; AlreadyCompressed = block copied verbatim.
+    public enum eUpdateOutcome { Failed, Protected, Skipped, Compressed, AlreadyCompressed }
 
     public enum eUiState { DISABLED, ENABLED, RENAME }
 

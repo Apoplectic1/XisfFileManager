@@ -33,14 +33,14 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
 - **`XisfFile.FocalRatio` setter self-derives** FOCRATIO from the file's FocalLength/ApertureDiameter,
   ignoring its assigned value (`XisfFile.cs:259`; `KeywordList`'s setter just stores what it's given) —
   FOCALLEN and APTDIA must be written first.
-- **`XisfFileUpdate.UpdateFileAsync` is save-if-needed:** `PROTECT` never writes (contract — but
-  enforcement lives at call sites and FluxDensity/Calibration bypass it, ROADMAP follow-up #10);
-  `UPDATE_NEW` writes when keywords changed **or** the block is uncompressed; `FORCE` always writes.
-  Saves rewrite files in place (temp file + atomic move) — see cautions in `VERIFICATION.md`.
+- **`XisfFileUpdate.UpdateFileAsync` is save-if-needed:** `PROTECT` never writes (enforced inside
+  the method; deliberate write paths like Calibration/FluxDensity set `FORCE` first); `UPDATE_NEW`
+  writes when keywords changed **or** the block is uncompressed; `FORCE` always writes. Saves
+  rewrite files in place (temp file + atomic move) — see cautions in `VERIFICATION.md`.
 - **`APTAREA` is optimistic:** full circular π·r², obstructions ignored — don't trust it for
   SNR/throughput math on the Newtonian (ROADMAP follow-up #2).
-- **Legacy `EXPOSURE` is normalized to `EXPTIME`** and purged on update (contract — but the value is
-  dropped when EXPTIME already exists, silently discarding Camera Set All edits; ROADMAP follow-up #11).
+- **Exposure lives in `EXPTIME`:** the `ExposureSeconds` setter writes EXPTIME (dropping any legacy
+  `EXPOSURE`); on-disk legacy `EXPOSURE` is converted to EXPTIME and purged at save.
 - Naming: `m` private fields, `b` booleans, `e` enums, `Type_Underscore_Names` for controls
   (full conventions in `ARCHITECTURE.md`).
 

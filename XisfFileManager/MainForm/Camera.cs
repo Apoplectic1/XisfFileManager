@@ -352,7 +352,6 @@ public partial class MainForm
                 file.ExposureSeconds = seconds;
             }
         }
-        file.AddKeyword("EXPTIME", file.ExposureSeconds.ToString(), "Exposure Time in Seconds");
 
         // Gain
         if (camera.HasGain)

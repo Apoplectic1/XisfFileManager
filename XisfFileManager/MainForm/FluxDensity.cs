@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Windows.Shapes;
 using XisfFileManager.Configuration;
 using XisfFileManager.Files;
+using XisfFileManager.Globals;
 
 namespace XisfFileManager
 {
@@ -125,6 +126,9 @@ namespace XisfFileManager
 
                 string outputPath = outputDir + System.IO.Path.GetFileName(xFile.FilePath);
 
+                // Deliberate write to a separate export copy — declare intent so the PROTECT gate
+                // inside UpdateFileAsync doesn't silently skip the export.
+                xFile.KeywordUpdateMode = eKeywordUpdateMode.FORCE;
                 var bStatus = await mXisfFileUpdate.UpdateFileAsync(xFile, outputPath);
 
                 if (bStatus == false)

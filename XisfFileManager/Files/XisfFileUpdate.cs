@@ -78,6 +78,14 @@ namespace XisfFileManager.Files
         /// <returns>True if the file is updated successfully; otherwise, false.</returns>
         public async Task<bool> UpdateFileAsync(XisfFile xFile, string destinationPath, Action<string>? onWriting = null)
         {
+            // PROTECT is enforced here, not at call sites: a protected file is never written, no matter
+            // which feature asks. Deliberate write paths (Calibration, FluxDensity) set FORCE first.
+            if (xFile.KeywordUpdateMode == eKeywordUpdateMode.PROTECT)
+            {
+                LastUpdateOutcome = eUpdateOutcome.Protected;
+                return true;
+            }
+
             int delay = 0;
             while (FileHelpers.IsFileLocked(xFile.FilePath) && delay < 100)
             {
@@ -92,7 +100,7 @@ namespace XisfFileManager.Files
                 return false;
             }
 
-            // Normalize keywords before writing (converts CREATOR->SWCREATE, DATE-OBS->DATE-LOC, EXPTIME->EXPOSURE)
+            // Normalize keywords before writing (converts CREATOR->SWCREATE, DATE-OBS->DATE-LOC, EXPOSURE->EXPTIME)
             xFile.NormalizeKeywords();
 
             // "Save if needed": skip only when nothing would change. In UPDATE_NEW mode that means the keywords
