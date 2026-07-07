@@ -40,5 +40,5 @@
 - [x] 6.1 `dotnet build XisfFileManager.sln -c Release` — 0 warnings / 0 errors
 - [x] 6.2 Launch the app: TS tab gone; Keywords + Calibration tabs select and render; Browse a folder to confirm the Calibration target-file tree still populates (feature-correct check)
 - [x] 6.3 Run the spec scenarios in `specs/scheduler-independence/spec.md` as a checklist
-- [ ] 6.4 Commit code + docs together on `dev`
-- [ ] 6.5 Release v1.9.0: bump RELEASING.md latest tag, merge `dev`→`main`, annotated tag, push `main`+tag, watch release.yml, confirm Velopack assets
+- [x] 6.4 Commit code + docs together on `dev`
+- [x] 6.5 Release v1.9.0: bump RELEASING.md latest tag, merge `dev`→`main`, annotated tag, push `main`+tag, watch release.yml, confirm Velopack assets
