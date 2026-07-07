@@ -12,8 +12,7 @@
 - **Velopack** for release packaging and in-app self-update (`Program.cs` `VelopackApp.Build().Run()`;
   startup `CheckForUpdatesAsync` in `MainForm.cs` pulls from GitHub Releases — see `RELEASING.md`)
 - **WindowsAPICodePack** (Core/Shell) for the folder-browse dialogs (`Directories/DirectoryOperations.cs`)
-- Timezone handling uses built-in `TimeZoneInfo`. (`GeoTimeZone`/`TimeZoneConverter` are referenced
-  in the csproj but never called — removal candidates.)
+- Timezone handling uses built-in `TimeZoneInfo` (no package)
 
 All planned refactoring phases are complete (.NET 10 upgrade, camera/telescope/capture-software
 abstractions, async/await, nullable annotations, CA cleanup). Details preserved in git history.

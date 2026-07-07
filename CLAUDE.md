@@ -46,5 +46,5 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
 
 ## Excluded from docs governance
 
-`packages/` (dead packages.config-era leftover — nothing references it; deletable), `TestData/`
-(sample inputs), `Archive/` (retired code, archival-only), `bin`/`obj` (generated), `.claude/`.
+`TestData/` (sample inputs), `Archive/` (retired code, archival-only), `bin`/`obj` (generated),
+`.claude/`.

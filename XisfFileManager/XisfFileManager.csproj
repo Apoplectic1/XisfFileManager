@@ -33,7 +33,7 @@
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Title>Xisf Manager</Title>
-    <RepositoryUrl>D:\Tools\XisfFileManager</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Apoplectic1/XisfManager</RepositoryUrl>
     <PackAsTool>False</PackAsTool>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Company>Skyhawk Consulting, Inc.</Company>
@@ -74,9 +74,7 @@
     <Content Include="XisfFileManager.ico" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="GeoTimeZone" Version="6.1.0" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-    <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
