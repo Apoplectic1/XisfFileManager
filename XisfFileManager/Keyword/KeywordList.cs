@@ -333,6 +333,14 @@ namespace XisfFileManager
 
         // *********************************************************************************************************
 
+        /// <summary>
+        /// True when the file carries an exposure keyword at all (standard EXPTIME or legacy
+        /// EXPOSURE). Needed because the ExposureSeconds getter returns 0.0 for a missing keyword,
+        /// which is indistinguishable from a genuine 0-second bias frame.
+        /// </summary>
+        public bool HasExposure =>
+            GetKeywordValue("EXPTIME") != string.Empty || GetKeywordValue("EXPOSURE") != string.Empty;
+
         public double ExposureSeconds
         {
             get

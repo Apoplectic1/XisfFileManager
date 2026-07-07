@@ -128,8 +128,9 @@ public partial class MainForm
         {
             if (!detectedCameras[camera]) continue;
 
-            // Exposure Seconds
-            var secondsAnalysis = CameraService.AnalyzeDoubleProperty(mFileList, camera, f => f.ExposureSeconds, -1);
+            // Exposure Seconds — presence-based: a missing exposure keyword maps to the excluded -1
+            // sentinel (the getter's 0.0 would masquerade as a genuine 0s bias frame)
+            var secondsAnalysis = CameraService.AnalyzeDoubleProperty(mFileList, camera, f => f.HasExposure ? f.ExposureSeconds : -1, -1);
             secondsAnalyses[camera] = secondsAnalysis;
             BindAnalysisToComboBox(_cameraSecondsComboBoxes![camera], secondsAnalysis);
 

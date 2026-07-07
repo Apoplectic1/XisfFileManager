@@ -16,6 +16,7 @@
 
 ## Recently shipped
 
+- **Seconds header reddens on missing exposure keyword** — the Seconds analysis is now presence-based (`HasExposure`): a file with no EXPTIME/EXPOSURE keyword drives the red header instead of masquerading as a genuine 0-second frame (real 0s bias frames stay valid). Sentinel audit of the other four columns found Gain/Offset/SensorTemp/Binning already correct (-1/-273 sentinels are excluded from valid values).
 - **Camera-header colorization for unresolved INSTRUME (closes former follow-up #8)** — the Camera column header now follows the same convention as the value headers: red = any loaded file whose `INSTRUME` is missing, blank, or matches no registered camera model; green = all resolved across 2+ cameras; black = single camera. Purely informational (Set All still leaves unmatched files untouched); supersedes the earlier status-line skipped-count idea (design settled 2026-07-07; background in `docs/2026-06-14-camera-colorization-multicamera-investigation.md` open decision #1).
 - **GitHub Actions bumped to `@v5` (closes former follow-up #4)** — `actions/checkout` and `actions/setup-dotnet` off the deprecated Node 20 runtime ahead of the 2026-09-16 removal; runner stays `windows-latest`.
 - **Dependency cruft dropped (closes former follow-up #11)** — removed the unused `GeoTimeZone`/`TimeZoneConverter` PackageReferences (timezone code uses built-in `TimeZoneInfo`), deleted the dead packages.config-era `packages/` folder, and pointed csproj `RepositoryUrl` at the GitHub URL instead of a stale local path.

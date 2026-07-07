@@ -236,6 +236,7 @@ namespace XisfFileManager.Files
             get => KeywordList.CREJECT;
             set => KeywordList.CREJECT = value;
         }
+        public bool HasExposure => KeywordList.HasExposure;
         public double ExposureSeconds
         {
             get => KeywordList.ExposureSeconds;

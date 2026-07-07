@@ -166,7 +166,9 @@ follow-up #8).
 - `Models/CameraConfiguration.cs` / `Services/CameraService.cs`: camera config base + detection,
   property analysis, UI color helpers. Header/label color convention: red = missing/unresolved
   values, green = legitimately different values (e.g. multi-camera), black = uniform;
-  `AnalyzeCameraResolution` drives the Camera-identity header
+  `AnalyzeCameraResolution` drives the Camera-identity header. The Seconds analysis is
+  presence-based (`HasExposure`) because the exposure getter's missing-value sentinel is 0.0,
+  which collides with genuine 0 s bias frames
 - `Models/TelescopeConfiguration.cs` / `Services/TelescopeService.cs`: telescope config base with
   reducer support (`ApplyKeywords` emits TELESCOP/FOCALLEN/APTDIA/APTAREA and triggers FOCRATIO) +
   detection, analysis, UI color helpers

@@ -5,6 +5,14 @@
 > records (investigations, decisions, reviews) go to `docs/YYYY-MM-DD-<slug>.md` instead; findings
 > that harden into standing truth graduate to `ARCHITECTURE.md` / `DOMAIN.md`.
 
+## 2026-07-07 — Camera-tab missing-value sentinel audit
+
+Checked all five value columns for the "missing masquerades as valid" pattern: only **Seconds**
+was affected — `ExposureSeconds` returns 0.0 for a missing keyword and the analysis accepted
+`v >= 0`, so keyword-less files looked like legitimate 0-second frames (and 0 s *is* legitimate
+for bias, so presence must be tested, not the value). Gain/Offset/Binning return -1 and
+SensorTemp -273 when missing, all correctly excluded by their analyses.
+
 ## 2026-07-07 — findings from the docs fan-out audit
 
 - **TS database access is read-only in code** — the only SQL that executes is `SELECT * FROM {table}`
