@@ -4,8 +4,9 @@
 > priorities live in the docs below.
 
 Windows Forms (.NET 10) app for managing XISF astrophotography image libraries: bulk FITS-keyword
-normalization, canonical renaming, image-block compression on save, a read-only N.I.N.A. Target
-Scheduler database viewer (write-back not implemented — see ROADMAP), and a calibration-frame library.
+normalization, canonical renaming, image-block compression on save, and a calibration-frame
+library. (Target Scheduler functionality was removed 2026-07-07 — TS is TSM-only; XFM never
+touches `scheduler.db`.)
 
 ## Doc map
 

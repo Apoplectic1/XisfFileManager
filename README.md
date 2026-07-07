@@ -9,8 +9,6 @@ Serialization Format) astrophotography images.
   software, exposure) across an image library
 - Renames files to a canonical scheme (with `REJECT` flagging of stacked-out subframes)
 - Compresses image blocks on save to the PixInsight/NINA compressed format (zlib + SHA-1)
-- Displays N.I.N.A. Target Scheduler projects, targets, and accepted-image counts from the
-  scheduler database
 - Maintains a calibration-frame library
 
 ## Install or build

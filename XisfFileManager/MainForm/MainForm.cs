@@ -33,12 +33,10 @@ namespace XisfFileManager
         private readonly XisfXmlReader mXmlReader;
         private readonly XisfFileRename mRenameFile;
         private string mFolderBrowseState = string.Empty;
-        private readonly XisfFileManager.TargetScheduler.SqlLiteManager mSchedulerDB;
         private bool mBCancel;
         private readonly XisfFileUpdate mXisfFileUpdate;
         private eKeywordUpdateMode mKeywordUpdateProtection;
         private eUiState mUiState;
-        private readonly CustomTreeView mExposureTreeView = new();
 
         // ##########################################################################################################################
         // Constructor
@@ -47,26 +45,9 @@ namespace XisfFileManager
         {
             InitializeComponent();
             CalibrationTabPageEvent.CalibrationTabPage_InvokeEvent += EventHandler_UpdateCalibrationPageForm;
-            TreeView_SchedulerTab_ProfileTree.NodeMouseClick += TreeView_SchedulerTab_ProfileTree_NodeMouseClick;
-            TreeView_SchedulerTab_ProjectTree.NodeMouseClick += TreeView_SchedulerTab_ProjectTree_NodeMouseClick;
-            //TreeView_SchedulerTab_PlansTree.NodeMouseClick += TreeView_SchedulerTab_PlanTree_NodeMouseClick_NodeMouseClick;
-
-
-            Panel? existing = TabPage_TargetScheduler.Controls.OfType<Panel>().FirstOrDefault();
-
-            mExposureTreeView.Dock = DockStyle.Fill; // TreeView fills the panel
-
-            if (existing != null)
-            {
-                existing.Controls.Add(mExposureTreeView); // Add the TreeView to the panel
-                TabPage_TargetScheduler.Controls.Add(existing); // Add the panel to the tab page
-            }
-
-
 
             mCalibration = new Calibration();
             mXmlReader = new XisfXmlReader();
-            mSchedulerDB = new XisfFileManager.TargetScheduler.SqlLiteManager();
             mXisfFileUpdate = new XisfFileUpdate();
             mKeywordUpdateProtection = eKeywordUpdateMode.UPDATE_NEW;
             Label_FileSelection_Statistics_OperationStatus.Text = "";
@@ -522,6 +503,22 @@ namespace XisfFileManager
             ExpandAllNodes(TreeView_CalibrationTab_TargetFileTree.Nodes);
         }
 
+        /// <summary>
+        /// Recursively expands all nodes in the specified tree node collection.
+        /// </summary>
+        /// <param name="nodes">The collection of tree nodes to expand.</param>
+        private static void ExpandAllNodes(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                // Expand the current node
+                node.Expand();
+
+                // Recursively expand all child nodes
+                ExpandAllNodes(node.Nodes);
+            }
+        }
+
         private async void Button_KeywordUpdateTab_SubFrameKeywords_UpdateKeywords_Click(object sender, EventArgs e)
         {
             if (RadioButton_KeywordUpdateTab_SubFrameKeywords_KeywordProtection_Protect.Checked)
@@ -723,8 +720,8 @@ namespace XisfFileManager
 
         private void TabControl_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            // Allow the Target Scheduler tab in all states; block other tabs when no files are loaded
-            if (mUiState != eUiState.ENABLED && e.TabPage != TabPage_TargetScheduler)
+            // Block tab switches when no files are loaded
+            if (mUiState != eUiState.ENABLED)
             {
                 e.Cancel = true;
             }

@@ -8,9 +8,7 @@
 
 XFM manages libraries of astrophotography subframes: after an imaging night, it reads XISF file
 metadata in bulk, normalizes/repairs FITS keywords (camera, telescope, capture software, exposure),
-renames files to a canonical scheme, displays plan/acquired data from the N.I.N.A. Target Scheduler
-database (read-only today; graded-count write-back is a ROADMAP item), and maintains a
-calibration-frame library.
+renames files to a canonical scheme, and maintains a calibration-frame library.
 
 ## XISF format
 
@@ -43,7 +41,7 @@ with `"REJECT  "` so they sort together and stand out visually. Full analysis:
 
 ## Ecosystem position
 
-XFM is one app in the Astronomy portfolio (see the parent `../CLAUDE.md` map). It reads the Target
-Scheduler plugin's database directly (`schedulerdb.sqlite` on BIRDWATCHER; accepted counts —
-write-back not implemented, ROADMAP follow-up #8). Long-term, the Target Scheduler tab migrates to
-the TSM app and XFM consumes `Catalog.db` read-only via `Astronomy.Catalog` (ROADMAP follow-up #7).
+XFM is one app in the Astronomy portfolio (see the parent `../CLAUDE.md` map). Target Scheduler
+viewing/editing is owned entirely by the TSM app: XFM has **no** TS integration and never
+consumes `scheduler.db` or `Catalog.db` (decided 2026-07-07; the former TS tab was removed then).
+XFM's scope is the image library itself — files on disk and their keywords.

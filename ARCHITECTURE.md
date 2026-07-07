@@ -7,7 +7,6 @@
 
 - **.NET 10.0** Windows Forms application (Windows 11 SDK 26100)
 - **Nullable reference types** enabled (0 warnings)
-- **SQLite** via Microsoft.Data.Sqlite for the Target Scheduler database
 - **MathNet.Numerics** for scientific calculations
 - **Velopack** for release packaging and in-app self-update (`Program.cs` `VelopackApp.Build().Run()`;
   startup `CheckForUpdatesAsync` in `MainForm.cs` pulls from GitHub Releases — see `RELEASING.md`)
@@ -25,7 +24,6 @@ XisfFileManager/
 │   ├── MainForm.cs     # Constructor (composition root) + Browse load pipeline + UI state
 │   ├── Camera.cs / Telescope.cs / CaptureSoftware.cs # Per-feature tab binding
 │   ├── ImageType.Detection.cs / .SetActions.cs / .Masters.cs # Filter & frame-type tab
-│   ├── TargetScheduler.Tree.cs / .Events.cs + CustomTreeView.cs # Scheduler tab
 │   └── Calibration.cs / FileSelection.cs / SubFrameKeywords.cs / FluxDensity.cs
 ├── Models/             # Domain models + shared session state
 │   ├── Workspace.cs    # Shared session state (loaded files, image lists, directory stats)
@@ -41,7 +39,6 @@ XisfFileManager/
 │   └── CaptureSoftwareService.cs # Software detection and analysis
 ├── Helpers/            # UIHelpers.cs (control manipulation), FileHelpers.cs (file ops)
 ├── Configuration/      # AppPaths.cs (machine-specific drives), XisfConstants.cs, DirectoryFilters.cs
-├── Data/               # ITableMapper.cs, SqliteReaderExtensions.cs, TableMappers.cs (8 TS tables)
 ├── Files/              # XISF file I/O operations
 │   ├── XisfFile.cs     # Core XISF file representation
 │   ├── XisfXmlReader.cs # XML metadata parsing
@@ -51,10 +48,6 @@ XisfFileManager/
 │   └── XML/Xml.cs      # XML metadata utilities
 ├── Keyword/            # Keyword.cs (Name/Value/Comment), KeywordList.cs (typed accessors)
 ├── Calibration/        # Calibration frame library
-├── TargetScheduler/    # N.I.N.A. Target Scheduler SQLite integration (read-only today)
-│   ├── SqlLiteManager.cs / SqlLiteReader.cs # orchestration + SELECT reads
-│   ├── SqlLiteWriter.cs / SqlLiteUpdater.cs # uncalled template / empty stub (no write path yet)
-│   └── Tables/         # Database table models
 ├── Calculations/       # Image statistics and math
 ├── Directories/        # Directory traversal and properties
 ├── Utility/            # ToolTip.cs and general-purpose utilities
@@ -116,19 +109,9 @@ Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are
 - `eOrder`: File ordering (INDEX, WEIGHT, WEIGHTINDEX, INDEXWEIGHT)
 - `eKeywordUpdateMode`: PROTECT, UPDATE_NEW, FORCE
 - `eUpdateOutcome`: result reporting for `XisfFileUpdate.LastUpdateOutcome`
-- `eMessageMode`, `eBufferData`, `eProjectPriority`, `eUiState`: messaging/buffer/TS-priority/UI state
+- `eMessageMode`, `eBufferData`, `eUiState`: messaging/buffer/UI state
 - Two enums live outside Globals.cs: `BlockCodec` (`Files/Compression/BlockCompressionInfo.cs`) and
   `ExcludeType` (`Directories/DirectoryOperations.cs`) — both without the `e` prefix
-
-## Target Scheduler integration
-
-**Read-only today.** Loads the N.I.N.A. Target Scheduler SQLite database — hardcoded to
-`\\BIRDWATCHER\SchedulerPlugin\schedulerdb.sqlite` (`MainForm/TargetScheduler.Tree.cs`) — via
-`SELECT` only (`SqlLiteReader.cs`). Eight tables are mapped (`Data/TableMappers.cs`):
-ProfilePreference, Project, Target, ExposurePlan, ExposureTemplate, AcquiredImage, RuleWeight,
-ImageData; table models in `TargetScheduler/Tables/`. `SqlLiteWriter`/`SqlLiteUpdater` are
-placeholder stubs with no call sites — graded-count write-back is not implemented (ROADMAP
-follow-up #8).
 
 ## Code conventions
 

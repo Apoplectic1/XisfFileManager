@@ -9,7 +9,6 @@ using XisfFileManager.Configuration;
 using XisfFileManager.Globals;
 using XisfFileManager.Files;
 using static System.Net.WebRequestMethods;
-using XisfFileManager.TargetScheduler.Tables;
 
 namespace XisfFileManager
 {

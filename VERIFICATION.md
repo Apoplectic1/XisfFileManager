@@ -21,16 +21,13 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
 A clean build proves compile-correctness only. UI/behavioral changes need a manual pass in the
 running app — typically: Browse to a folder of real XISF files, exercise the affected tab, and
 Update Keywords to confirm the save path. Sample inputs live in `TestData/`
-(`Unit16_0s_200x200.xisf`, `schedulerdb.sqlite`, a NINA profile). State explicitly what was
-build-verified vs. what still needs a human in-app check.
+(`Unit16_0s_200x200.xisf`, a NINA profile). State explicitly what was build-verified vs. what
+still needs a human in-app check.
 
 ## Cautions
 
 - Keyword updates **rewrite XISF files in place** (temp file + atomic move). Test against copies or
   `TestData/`, not the live image library, unless the write is the thing being verified.
-- Target Scheduler access is read-only (`SELECT` only) but hardcoded to
-  `\\BIRDWATCHER\SchedulerPlugin\schedulerdb.sqlite` (`MainForm/TargetScheduler.Tree.cs`) — there is
-  no setting to retarget it, so pointing at `TestData/schedulerdb.sqlite` requires a code edit.
 
 ## CI
 
