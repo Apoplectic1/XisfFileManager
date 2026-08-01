@@ -92,3 +92,7 @@ Installer/
 
 ## End of .gitignore
 *.deploy
+
+# Parked source, deliberately out of the project (see CLAUDE.md).
+# On disk for reference only; never built, referenced, or read.
+archive/

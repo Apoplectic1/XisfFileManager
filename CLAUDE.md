@@ -47,5 +47,7 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
 
 ## Excluded from docs governance
 
-`TestData/` (sample inputs), `Archive/` (retired code, archival-only), `bin`/`obj` (generated),
-`.claude/`.
+`TestData/` (sample inputs), `bin`/`obj` (generated), `.claude/`, and `archive/` — retired source parked on
+disk for reference (`CsvFileRead.cs`, `Gpu.cs`; nothing in the project references them). **`archive/` is
+gitignored, so its contents are NOT versioned** — treat anything there as unbacked-up, and never build,
+reference, or read it. Adding files there removes them from git's protection; deleting them is unrecoverable.
