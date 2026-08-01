@@ -14,6 +14,10 @@
 
 ## Recently shipped
 
+- **Zero-warning ratchet (2026-08-01, portfolio-wide)** — `<TreatWarningsAsErrors>` on the project; it was
+  already warning-clean in Debug and Release (verified by forced non-incremental rebuilds before the switch
+  went on), so this locks in the existing state. The "0 warnings" bar in VERIFICATION.md is now enforced by
+  the compiler rather than by discipline.
 - **Target Scheduler functionality removed (closes former follow-ups #7 and #8; v1.9.0)** — TS is TSM-only now, and XFM will **never** consume `scheduler.db` or `Catalog.db` (decided 2026-07-07). Deleted: the TS tab + Designer controls, `TargetScheduler/` + `Data/` folders, `MainForm/TargetScheduler.*` + `CustomTreeView`, `eProjectPriority`, the `Microsoft.Data.Sqlite` package (also clearing its NU1903-vulnerable transitive dep), and `TestData/schedulerdb.sqlite`. `ExpandAllNodes` moved to MainForm.cs (the Calibration target-file tree still uses it). OpenSpec change: `openspec/changes/remove-target-scheduler/`.
 - **Seconds header reddens on missing exposure keyword** — the Seconds analysis is now presence-based (`HasExposure`): a file with no EXPTIME/EXPOSURE keyword drives the red header instead of masquerading as a genuine 0-second frame (real 0s bias frames stay valid). Sentinel audit of the other four columns found Gain/Offset/SensorTemp/Binning already correct (-1/-273 sentinels are excluded from valid values).
 - **Camera-header colorization for unresolved INSTRUME (closes former follow-up #8)** — the Camera column header now follows the same convention as the value headers: red = any loaded file whose `INSTRUME` is missing, blank, or matches no registered camera model; green = all resolved across 2+ cameras; black = single camera. Purely informational (Set All still leaves unmatched files untouched); supersedes the earlier status-line skipped-count idea (design settled 2026-07-07; background in `docs/2026-06-14-camera-colorization-multicamera-investigation.md` open decision #1).

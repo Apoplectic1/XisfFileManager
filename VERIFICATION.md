@@ -10,7 +10,9 @@ dotnet build XisfFileManager.sln -c Release
 ```
 
 Pure-managed solution — `dotnet build` is sufficient (no `.vcxproj` in the graph). Nullable is
-enabled repo-wide; the bar is **0 warnings**.
+enabled repo-wide; the bar is **0 warnings — and enforced**: `<TreatWarningsAsErrors>` since 2026-08-01
+(portfolio-wide ratchet), so a new warning is a build break. Fix it, or — rarely, with a comment —
+suppress it deliberately; never turn the ratchet off.
 
 ## Run (feature-correct)
 
