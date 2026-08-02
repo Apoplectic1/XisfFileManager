@@ -1,29 +1,65 @@
-# Releasing
+# RELEASING.md — publishing XFM to GitHub
 
-> **Charter:** How a release is cut and what GitHub is for. Read before merging to `main` or tagging.
+> **Charter:** the rules for pushes to the public GitHub mirror. **The local repo is ground
+> truth; GitHub is the public face** — a distribution channel, never the canonical location.
+> Nothing here changes how development works; it only governs what the public sees and when.
 
-## Branch model
+## The mirror
 
-- **`dev`** — active development branch (default; new work lands here).
-- **`main`** — stable/release branch; merge `dev` into `main` when cutting a release.
+`origin` = https://github.com/Apoplectic1/XisfFileManager (public; renamed from `XisfManager`
+2026-08-02). No other remotes. Two stale pre-policy branches remain on origin —
+`TargetScheduler` and `C++/CLI_for_PCL_Library` — prune candidates.
 
-## Cut a release
+## Branch policy
 
-1. Merge `dev` → `main` locally.
-2. Create an **annotated** tag `vX.Y.Z` on `main` and push `main` + the tag.
-3. The push triggers `.github/workflows/release.yml`, which injects the tag into
-   `AssemblyInformationalVersion` (shown in the window title), publishes a self-contained win-x64
-   build, packages it with Velopack (`vpk pack`), and uploads the installer + update assets to a
-   GitHub Release.
-4. **Installed copies pick the release up automatically**: the app checks GitHub Releases at
-   startup via Velopack (`MainForm.CheckForUpdatesAsync`) — a tag push propagates to installed
-   apps on their next launch.
+- **`dev` = working branch.** All work lands here. **`dev` never pushes.**
+- **`main` = distribution-ready ref, and every push of `main` carries a tag** — `vX.Y.Z`
+  (semver, `v`-prefixed). Publish = fast-forward `main` to the chosen `dev` commit, tag it,
+  push both:
+  ```bash
+  git checkout main && git merge --ff-only dev
+  git tag vX.Y.Z
+  git push origin main vX.Y.Z
+  git checkout dev
+  ```
+- Publish at natural completion points (a shipped unit of work, docs riding the same commit) —
+  not on a schedule, and never mid-change. The working tree must be clean and the build
+  warning-free at the published commit (see `VERIFICATION.md`). No tag → no push: the tag is
+  what makes a `main` state a published state.
 
-Latest released tag: **`v1.9.0`**.
+## Distribution: Velopack installers, built locally (adopted 2026-08-02)
 
-## GitHub policy
+Installers ship as GitHub Releases **packed and uploaded from this machine** via
+`scripts\release.ps1` — the portfolio's one release mechanism (TSM/TP model). This replaced
+the tag-triggered GitHub Actions workflow (`release.yml`, removed 2026-08-02).
 
-The local tree is the source of truth; `origin` (github.com/Apoplectic1/XisfFileManager) is a
-**distribution channel**. Push `main` and release tags only — never push or sync `dev` or feature
-branches. (Two stale pre-policy branches remain on origin — `TargetScheduler` and
-`C++/CLI_for_PCL_Library` — prune candidates.)
+One-time setup: `dotnet tool install -g vpk`, and `$env:GITHUB_TOKEN` = a PAT with
+`public_repo` scope (only needed for upload; `-NoUpload` dry-runs without it).
+
+Per-release flow:
+```powershell
+# on main, at the published commit (see Branch policy)
+git tag vX.Y.Z
+git push origin main vX.Y.Z
+.\scripts\release.ps1          # publish → vpk pack → upload to GitHub Releases
+```
+- **Versions come from the tag:** the script reads the latest reachable tag and injects it as
+  `InformationalVersion` at publish (shown in the window title) and as the Velopack package
+  version. `AssemblyVersion` stays hand-set in the csproj (no MinVer here).
+- **The installed app self-updates**: startup check of this repo's Releases via Velopack
+  (`MainForm.CheckForUpdatesAsync`); a published release propagates to installed copies on
+  their next launch.
+- **Dry-run:** `.\scripts\release.ps1 -NoUpload` → artifacts in `Releases\` (gitignored, as is
+  the `publish\` staging dir); run the Setup.exe there to test an install locally.
+
+Latest released tag: **`v1.9.0`** (last CI-built release; the next tag is the first
+script-built one).
+
+## Content rules (what is deliberately public)
+
+- **`README.md` is the storefront** — user-facing description only (what XFM does, install,
+  usage caveats, license). Development/testing minutiae stay out.
+- **`TestData/` sample images are deliberately committed** and therefore public.
+- **Never in the repo, so never published:** tokens/credentials (none exist).
+- History publishes whole. Anything that must not be public must never be committed — there
+  is no post-hoc scrub step.

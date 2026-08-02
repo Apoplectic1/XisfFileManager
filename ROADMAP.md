@@ -14,6 +14,10 @@
 
 ## Recently shipped
 
+- **Local release script replaces CI (2026-08-02)** — `scripts/release.ps1` (TSM/TP model: publish →
+  `vpk pack` → upload) is now the release path; `.github/workflows/release.yml` deleted. The tag still
+  versions the build (injected `InformationalVersion`), and RELEASING.md was rewritten to carry the
+  portfolio's general rules (dev never pushes, ff-only `main`, no tag → no push, content rules).
 - **Zero-warning ratchet (2026-08-01, portfolio-wide)** — `<TreatWarningsAsErrors>` on the project; it was
   already warning-clean in Debug and Release (verified by forced non-incremental rebuilds before the switch
   went on), so this locks in the existing state. The "0 warnings" bar in VERIFICATION.md is now enforced by

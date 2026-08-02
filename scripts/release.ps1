@@ -1,0 +1,77 @@
+#requires -version 5.1
+# Build, pack, and (optionally) upload a XisfFileManager release to GitHub.
+# Modeled on TSM's scripts/release.ps1; XFM differences: no MinVer — the script injects the
+# tag version as InformationalVersion at publish (shown in the window title), and the exe is
+# XisfFileManager.exe.
+#
+# Prerequisites (one-time per machine):
+#   dotnet tool install -g vpk
+#   $env:GITHUB_TOKEN = "<personal-access-token-with-public_repo-scope>"
+#
+# Per-release flow (see RELEASING.md):
+#   1. git tag vX.Y.Z on main, push main + tag
+#   2. .\scripts\release.ps1
+#
+# The script reads the latest reachable tag via `git describe --tags --abbrev=0` and uses
+# that as the release version.
+
+[CmdletBinding()]
+param(
+    # Skip the GitHub upload step (useful for local dry-runs of vpk pack).
+    [switch] $NoUpload
+)
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+Push-Location $repoRoot
+try {
+    $tag = git describe --tags --abbrev=0 2>$null
+    if (-not $tag) {
+        throw "No git tag reachable from HEAD. Tag a release first (e.g. 'git tag v2.0.0')."
+    }
+    $version = $tag.TrimStart('v')
+    Write-Host "Releasing XisfFileManager $version (tag $tag)" -ForegroundColor Cyan
+
+    Write-Host "`n--> dotnet publish (Release|win-x64, self-contained)" -ForegroundColor Cyan
+    dotnet publish XisfFileManager/XisfFileManager.csproj -c Release -r win-x64 --self-contained true -o .\publish -p:InformationalVersion=$version -nologo
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
+
+    $publish = Join-Path $repoRoot 'publish'
+    if (-not (Test-Path (Join-Path $publish 'XisfFileManager.exe'))) { throw "Publish output not found at $publish" }
+
+    Write-Host "`n--> vpk pack" -ForegroundColor Cyan
+    vpk pack `
+        -u XisfFileManager `
+        -v $version `
+        -p $publish `
+        -e XisfFileManager.exe `
+        -i XisfFileManager\XisfFileManager.ico `
+        --packTitle 'XISF File Manager'
+    if ($LASTEXITCODE -ne 0) { throw "vpk pack failed" }
+
+    if ($NoUpload) {
+        Write-Host "`nDone. Skipping upload (-NoUpload). Output is in .\Releases\" -ForegroundColor Yellow
+        return
+    }
+
+    if (-not $env:GITHUB_TOKEN) {
+        throw "GITHUB_TOKEN env var is not set. Either set it or re-run with -NoUpload."
+    }
+
+    Write-Host "`n--> vpk upload github (publish)" -ForegroundColor Cyan
+    # --tag aligns the GitHub release tag with the git tag (vpk's default would be the bare
+    # version "2.0.0", but the git/RELEASING.md convention is "v2.0.0").
+    vpk upload github `
+        --repoUrl 'https://github.com/Apoplectic1/XisfFileManager' `
+        --token $env:GITHUB_TOKEN `
+        --tag $tag `
+        --publish
+    if ($LASTEXITCODE -ne 0) { throw "vpk upload failed" }
+
+    Write-Host "`nReleased XisfFileManager $version to GitHub." -ForegroundColor Green
+}
+finally {
+    Pop-Location
+}

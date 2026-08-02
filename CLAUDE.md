@@ -17,7 +17,7 @@ touches `scheduler.db`.)
 | `ROADMAP.md` | Open follow-ups + recently-shipped digest (git is the changelog) |
 | `VERIFICATION.md` | How to verify a change (no test project — build + manual in-app pass) |
 | `NOTEBOOK.md` | Lab notebook: chronological empirical findings |
-| `RELEASING.md` | dev→main flow, `vX.Y.Z` tag-triggered releases, GitHub push policy |
+| `RELEASING.md` | dev→main flow, `vX.Y.Z` tag-gated local releases (`scripts/release.ps1`), GitHub push policy |
 | `docs/` | Journal: dated records `YYYY-MM-DD-<slug>.md` (investigations, decisions) — discover via glob/grep, not enumerated here. Also holds `FITS Keyword Standards.pdf` (reference asset) |
 
 Portfolio map (sibling repos, shared library, data-flow hubs): `../CLAUDE.md`.
