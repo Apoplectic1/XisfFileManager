@@ -40,6 +40,16 @@ try {
     $publish = Join-Path $repoRoot 'publish'
     if (-not (Test-Path (Join-Path $publish 'XisfFileManager.exe'))) { throw "Publish output not found at $publish" }
 
+    # AL coordination gate (see RELEASING.md), conditional: arms itself when XFM's payload
+    # carries Astronomy.* DLLs (planned AL adoption). Until then it is inert.
+    $alCore = Join-Path $publish 'Astronomy.Core.dll'
+    if (Test-Path $alCore) {
+        $alDirty = git -C (Join-Path $repoRoot '..\Library') status --porcelain
+        if ($alDirty) { throw "..\Library working tree is dirty - commit and release AL first (Library\RELEASING.md)." }
+        $alVer = (Get-Item $alCore).VersionInfo.ProductVersion
+        if ($alVer -match '-alpha') { throw "Embedded Astronomy.Core.dll stamps '$alVer' (untagged AL state) - release AL first (Library\RELEASING.md)." }
+    }
+
     Write-Host "`n--> vpk pack" -ForegroundColor Cyan
     vpk pack `
         -u XisfFileManager `
