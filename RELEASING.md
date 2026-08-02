@@ -68,6 +68,8 @@ earlier were CI-built).
 
 - **`README.md` is the storefront** — user-facing description only (what XFM does, install,
   usage caveats, license). Development/testing minutiae stay out.
+- **MIT-licensed** (`LICENSE`, © 2024–2026 Dan Stark; adopted 2026-08-02 with the rest of the
+  portfolio).
 - **`TestData/` sample images are deliberately committed** and therefore public.
 - **Never in the repo, so never published:** tokens/credentials (none exist).
 - History publishes whole. Anything that must not be public must never be committed — there

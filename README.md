@@ -29,3 +29,7 @@ Requires the .NET 10 SDK on Windows. Releases are tagged `vX.Y.Z` and packaged b
 `CLAUDE.md` is the doc router: `ARCHITECTURE.md` (mechanics), `DOMAIN.md` (astronomy context),
 `ROADMAP.md` (priorities), `VERIFICATION.md` (how to verify a change), `RELEASING.md` (releases),
 `NOTEBOOK.md` (lab notebook), `docs/` (dated notes).
+
+## License
+
+[MIT](LICENSE)
