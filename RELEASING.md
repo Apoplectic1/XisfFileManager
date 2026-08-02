@@ -7,8 +7,8 @@
 ## The mirror
 
 `origin` = https://github.com/Apoplectic1/XisfFileManager (public; renamed from `XisfManager`
-2026-08-02). No other remotes. Two stale pre-policy branches remain on origin —
-`TargetScheduler` and `C++/CLI_for_PCL_Library` — prune candidates.
+2026-08-02). No other remotes. `main` is the only branch on origin (default branch; two stale
+pre-policy branches pruned 2026-08-02 — their history remains on local branches).
 
 ## Branch policy
 
