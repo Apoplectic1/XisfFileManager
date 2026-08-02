@@ -14,6 +14,8 @@
 
 ## Recently shipped
 
+- **Released `v2.0.1` (2026-08-02)** — ships the title/MinVer fix below; first release with a
+  Velopack delta package (valid baseline: local `Releases\` still held the published 2.0.0).
 - **Window title = app name + version; MinVer adopted (2026-08-02)** — title is now
   `XISF File Manager X.Y.Z` (TSM pattern, a portfolio-general rule), replacing the
   date/config/version-label form whose CI-injection heuristic showed "unknown" the moment the
