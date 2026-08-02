@@ -14,6 +14,9 @@
 
 ## Recently shipped
 
+- **Released `v2.0.0` (2026-08-02)** — first script-built release (`scripts/release.ps1`): Velopack 1.2.0,
+  repo-rename URL fixes, release-flow migration. Origin pruned to `main`-only the same day (default
+  branch fixed to `main`; stale `TargetScheduler` + `C++/CLI_for_PCL_Library` remain as local branches).
 - **Local release script replaces CI (2026-08-02)** — `scripts/release.ps1` (TSM/TP model: publish →
   `vpk pack` → upload) is now the release path; `.github/workflows/release.yml` deleted. The tag still
   versions the build (injected `InformationalVersion`), and RELEASING.md was rewritten to carry the
