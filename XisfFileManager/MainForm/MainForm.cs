@@ -130,7 +130,7 @@ namespace XisfFileManager
         {
             try
             {
-                var mgr = new UpdateManager(new GithubSource("https://github.com/Apoplectic1/XisfManager", null, false));
+                var mgr = new UpdateManager(new GithubSource("https://github.com/Apoplectic1/XisfFileManager", null, false));
                 var updateInfo = await mgr.CheckForUpdatesAsync();
 
                 if (updateInfo != null)

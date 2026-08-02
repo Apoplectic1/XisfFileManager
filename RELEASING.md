@@ -23,7 +23,7 @@ Latest released tag: **`v1.9.0`**.
 
 ## GitHub policy
 
-The local tree is the source of truth; `origin` (github.com/Apoplectic1/XisfManager) is a
+The local tree is the source of truth; `origin` (github.com/Apoplectic1/XisfFileManager) is a
 **distribution channel**. Push `main` and release tags only — never push or sync `dev` or feature
 branches. (Two stale pre-policy branches remain on origin — `TargetScheduler` and
 `C++/CLI_for_PCL_Library` — prune candidates.)
