@@ -43,9 +43,10 @@ git tag vX.Y.Z
 git push origin main vX.Y.Z
 .\scripts\release.ps1          # publish → vpk pack → upload to GitHub Releases
 ```
-- **Versions come from the tag:** the script reads the latest reachable tag and injects it as
-  `InformationalVersion` at publish (shown in the window title) and as the Velopack package
-  version. `AssemblyVersion` stays hand-set in the csproj (no MinVer here).
+- **Versions come from the tag** via MinVer (`<MinVerTagPrefix>v</MinVerTagPrefix>`, same as
+  TSM) — the same tag gates the `main` push, names the GitHub Release, stamps the assembly,
+  and shows in the window title (`XISF File Manager X.Y.Z`). No version files; untagged
+  commits shape as `-alpha` prereleases.
 - **The installed app self-updates**: startup check of this repo's Releases via Velopack
   (`MainForm.CheckForUpdatesAsync`); a published release propagates to installed copies on
   their next launch.

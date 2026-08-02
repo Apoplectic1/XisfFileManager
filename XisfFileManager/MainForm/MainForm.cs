@@ -59,15 +59,10 @@ namespace XisfFileManager
             Label_FileSelection_Statistics_OperationStatus.Text = "No Images Selected";
             Label_FileSelection_Statistics_TempratureCoefficient.Text = "Temperature Coefficient: Not Computed";
 
-            string buildDate = System.IO.File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).ToString("yyyy.MM.dd - h:mm tt");
-            string buildConfig;
-#if DEBUG
-            buildConfig = "Debug";
-#else
-            buildConfig = "Release";
-#endif
-            string versionLabel = GetVersionLabel();
-            this.Text = $"XISF File Manager - {buildDate} - {buildConfig} - {versionLabel}";
+            string version = (Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion ?? "?").Split('+')[0];
+            this.Text = $"XISF File Manager {version}";
 
 
             Utility.ToolTips.AddToolTip(RadioButton_FileSelection_Index_ByFilter, "Orders Files by Capture Time per Filter", "\"By Target\" orders each filter's files consecutively.\r\n\"By Night\" orders each filter's files consecutively by night.");
@@ -730,65 +725,6 @@ namespace XisfFileManager
         private async void Button_KeywordUpdateTab_SubFrameKeywords_SetupFluxDensity_Click(object sender, EventArgs e)
         {
             await SetupFluxDensity();
-        }
-
-        // ##########################################################################################################################
-        // ##########################################################################################################################
-
-        private static string GetVersionLabel()
-        {
-            var assembly = Assembly.GetExecutingAssembly();
-            var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-
-            if (!string.IsNullOrEmpty(infoVersion))
-            {
-                // SDK default is "1.0.0+commithash"; CI sets a clean semver like "1.2.3"
-                // Strip the "+hash" suffix before comparing to the assembly version
-                string baseVersion = infoVersion.Contains('+') ? infoVersion.Substring(0, infoVersion.IndexOf('+')) : infoVersion;
-                string? assemblyVersion = assembly.GetName().Version?.ToString();
-
-                // If the base version doesn't match the assembly version, CI injected it
-                if (assemblyVersion == null || !assemblyVersion.StartsWith(baseVersion))
-                {
-                    return $"v{baseVersion}";
-                }
-            }
-
-            return GetGitBranch();
-        }
-
-        private static string GetGitBranch()
-        {
-            try
-            {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string? dir = baseDir;
-
-                // Walk up to find the .git directory
-                while (dir != null)
-                {
-                    string gitDir = Path.Combine(dir, ".git");
-                    if (Directory.Exists(gitDir))
-                    {
-                        string headFile = Path.Combine(gitDir, "HEAD");
-                        if (File.Exists(headFile))
-                        {
-                            string head = File.ReadAllText(headFile).Trim();
-                            if (head.StartsWith("ref: refs/heads/"))
-                                return head.Substring("ref: refs/heads/".Length);
-                            return head.Substring(0, Math.Min(8, head.Length)); // detached HEAD
-                        }
-                        break;
-                    }
-                    dir = Directory.GetParent(dir!)?.FullName;
-                }
-            }
-            catch
-            {
-                // Ignore errors reading git info
-            }
-
-            return "unknown";
         }
 
     }

@@ -14,6 +14,12 @@
 
 ## Recently shipped
 
+- **Window title = app name + version; MinVer adopted (2026-08-02)** — title is now
+  `XISF File Manager X.Y.Z` (TSM pattern, a portfolio-general rule), replacing the
+  date/config/version-label form whose CI-injection heuristic showed "unknown" the moment the
+  v2.0.0 tag matched the hand-set AssemblyVersion. MinVer (tag-driven, `-alpha` prereleases on
+  untagged commits) replaces the hand-set AssemblyVersion and the script's InformationalVersion
+  injection; `GetVersionLabel`/`GetGitBranch` deleted.
 - **Released `v2.0.0` (2026-08-02)** — first script-built release (`scripts/release.ps1`): Velopack 1.2.0,
   repo-rename URL fixes, release-flow migration. Origin pruned to `main`-only the same day (default
   branch fixed to `main`; stale `TargetScheduler` + `C++/CLI_for_PCL_Library` remain as local branches).

@@ -39,7 +39,10 @@
     <PackAsTool>False</PackAsTool>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Company>Skyhawk Consulting, Inc.</Company>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <!-- MinVer derives the assembly version from the latest v-prefixed git tag (the same vX.Y.Z
+         tags that gate main pushes — RELEASING.md). Untagged commits shape as alpha prereleases. -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerDefaultPreReleaseIdentifiers>alpha.0</MinVerDefaultPreReleaseIdentifiers>
     <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -69,6 +72,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft-WindowsAPICodePack-Core" Version="1.1.5" />
     <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
+    <PackageReference Include="MinVer" Version="7.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
   <ItemGroup>

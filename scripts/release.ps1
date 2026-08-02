@@ -1,8 +1,6 @@
 #requires -version 5.1
 # Build, pack, and (optionally) upload a XisfFileManager release to GitHub.
-# Modeled on TSM's scripts/release.ps1; XFM differences: no MinVer — the script injects the
-# tag version as InformationalVersion at publish (shown in the window title), and the exe is
-# XisfFileManager.exe.
+# Modeled on TSM's scripts/release.ps1; XFM difference: the exe is XisfFileManager.exe.
 #
 # Prerequisites (one-time per machine):
 #   dotnet tool install -g vpk
@@ -13,7 +11,8 @@
 #   2. .\scripts\release.ps1
 #
 # The script reads the latest reachable tag via `git describe --tags --abbrev=0` and uses
-# that as the release version.
+# that as the release version. MinVer (in XisfFileManager.csproj) reads the same tag at build
+# time so the assembly version matches.
 
 [CmdletBinding()]
 param(
@@ -35,7 +34,7 @@ try {
     Write-Host "Releasing XisfFileManager $version (tag $tag)" -ForegroundColor Cyan
 
     Write-Host "`n--> dotnet publish (Release|win-x64, self-contained)" -ForegroundColor Cyan
-    dotnet publish XisfFileManager/XisfFileManager.csproj -c Release -r win-x64 --self-contained true -o .\publish -p:InformationalVersion=$version -nologo
+    dotnet publish XisfFileManager/XisfFileManager.csproj -c Release -r win-x64 --self-contained true -o .\publish -nologo
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
     $publish = Join-Path $repoRoot 'publish'
