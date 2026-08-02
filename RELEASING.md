@@ -50,7 +50,11 @@ git push origin main vX.Y.Z
   (`MainForm.CheckForUpdatesAsync`); a published release propagates to installed copies on
   their next launch.
 - **Dry-run:** `.\scripts\release.ps1 -NoUpload` → artifacts in `Releases\` (gitignored, as is
-  the `publish\` staging dir); run the Setup.exe there to test an install locally.
+  the `publish\` staging dir); run the Setup.exe there to test an install locally. vpk refuses
+  to re-pack a version already present in `Releases\` — delete that folder before repeating a
+  dry-run at the same tag.
+- The app's `Velopack` NuGet package and the `vpk` CLI should stay on matching versions
+  (both 1.2.0 as of 2026-08-02) — `vpk pack` warns on skew.
 
 Latest released tag: **`v1.9.0`** (last CI-built release; the next tag is the first
 script-built one).
