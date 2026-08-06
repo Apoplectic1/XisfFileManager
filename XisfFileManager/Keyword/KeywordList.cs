@@ -813,6 +813,40 @@ namespace XisfFileManager
                 }
             }
         }
+        /// <summary>
+        /// Stamps a measured plate solution (astap-plate-solve, 2026-08-06): pointing + measured sky
+        /// angle + the full standard WCS so any future software can read the solution. High-tier
+        /// programmatic surface — the one place solver results become keywords. AddKeyword replaces,
+        /// so solved values always win over planned ones (disk is truth). None of these names appear
+        /// in RemoveUnwantedKeywords (verified 2026-08-06) — keep it that way.
+        /// </summary>
+        public void SetPlateSolution(Solver.SolveResult solution)
+        {
+            System.Globalization.CultureInfo inv = System.Globalization.CultureInfo.InvariantCulture;
+
+            AddKeyword("RA", solution.RaDegrees.ToString("0.######", inv), "[deg] Solved right ascension of frame center (ASTAP)");
+            AddKeyword("DEC", solution.DecDegrees.ToString("0.######", inv), "[deg] Solved declination of frame center (ASTAP)");
+            RotatorSkyAngle = solution.PositionAngleDegrees;   // OBJCTROT — measured, replaces planned
+
+            AddKeyword("CTYPE1", "RA---TAN", "Solved WCS projection (ASTAP)");
+            AddKeyword("CTYPE2", "DEC--TAN", "Solved WCS projection (ASTAP)");
+            AddKeyword("EQUINOX", "2000.0", "[yr] Equinox of solved coordinates");
+            AddKeyword("CRVAL1", solution.Crval1, "[deg] Solved WCS RA of reference pixel (ASTAP)");
+            AddKeyword("CRVAL2", solution.Crval2, "[deg] Solved WCS DEC of reference pixel (ASTAP)");
+            AddKeyword("CRPIX1", solution.Crpix1, "[px] Solved WCS reference pixel X (frame center)");
+            AddKeyword("CRPIX2", solution.Crpix2, "[px] Solved WCS reference pixel Y (frame center)");
+            AddKeyword("CD1_1", solution.Cd1_1, "Solved WCS CD matrix (ASTAP)");
+            AddKeyword("CD1_2", solution.Cd1_2, "Solved WCS CD matrix (ASTAP)");
+            AddKeyword("CD2_1", solution.Cd2_1, "Solved WCS CD matrix (ASTAP)");
+            AddKeyword("CD2_2", solution.Cd2_2, "Solved WCS CD matrix (ASTAP)");
+            if (solution.Crota1 != string.Empty)
+                AddKeyword("CROTA1", solution.Crota1, "[deg] Solved WCS image twist of X axis (ASTAP)");
+            if (solution.Crota2 != string.Empty)
+                AddKeyword("CROTA2", solution.Crota2, "[deg] Solved WCS image twist of Y axis (ASTAP)");
+        }
+
+        // *********************************************************************************************************
+
         public void RemoveUnwantedKeywords()
         {
             RemoveKeyword("ALT-OBS");

@@ -17,6 +17,16 @@ metadata header carrying FITS-compatible keywords plus binary image-data attachm
 compressed form used by PixInsight/NINA is `zlib+sh` (byte-shuffle + zlib) with a SHA-1 block
 checksum — the format XFM targets on save (mechanics and the plain-`zlib` fallback: `ARCHITECTURE.md`).
 
+## Plate solving: measured vs planned (2026-08-06)
+
+A light frame's header carries two kinds of pointing/rotation truth. NINA stamps what it was *told*:
+`RA`/`DEC` from the mount and `OBJCTROT` from the target's **planned** position angle (only when a
+rotation was set — many frames have none, which is what TSM shows as mechanical-fallback `°(M)`).
+XFM's Solver checkbox replaces plan with **measurement**: ASTAP solves the actual star field and XFM
+stamps the measured centre coordinates, measured position angle (`OBJCTROT`), and the full standard
+WCS solution. Measured always wins — disk is truth. The solved WCS also makes the file
+self-describing for any WCS-aware software (PixInsight, astrometry tools).
+
 ## Frame types & filters
 
 - **Light** — exposure of the target; **Dark** — thermal signal at matching exposure/temp;

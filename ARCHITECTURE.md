@@ -44,9 +44,9 @@ XisfFileManager/
 │   ├── XisfXmlReader.cs # XML metadata parsing
 │   ├── XisfFileRename.cs / XisfFileUpdate.cs # Renaming / modification+writing
 │   ├── Buffer.cs       # Binary buffer operations
-│   ├── Compression/    # XisfBlockCompression.cs + BlockCompressionInfo.cs (zlib+sh + SHA-1)
-│   └── XML/Xml.cs      # XML metadata utilities
+│   └── XML/Xml.cs      # XML metadata utilities  (block codec: AL Astronomy.XISF.Compression since 2026-08-06)
 ├── Keyword/            # Keyword.cs (Name/Value/Comment), KeywordList.cs (typed accessors)
+├── Solver/             # AstapSolver.cs + SolveResult (local ASTAP plate solving, read-pass feature)
 ├── Calibration/        # Calibration frame library
 ├── Calculations/       # Image statistics and math
 ├── Directories/        # Directory traversal and properties
@@ -128,6 +128,27 @@ Keywords follow FITS conventions with Name/Value/Comment triplets. Keywords XFM 
 
 Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are all written by
 `TelescopeConfiguration.ApplyKeywords`, invoked from the Telescope tab's Set All / Set By File buttons.
+
+### Solved-solution keywords (astap-plate-solve, 2026-08-06)
+
+When the Directory Selection **Solver** checkbox is checked, the Browse read pass plate-solves every
+**light** frame (masters excluded — their own checkbox path; calibration never) with the local ASTAP
+CLI and stamps the measured solution into the in-memory `KeywordList` via the high-tier
+`SetPlateSolution`: `RA`/`DEC` (degrees, frame centre), `OBJCTROT` (**measured** position angle —
+replaces NINA's planned value), `CTYPE1/2` (`RA---TAN`/`DEC--TAN`), `EQUINOX`, `CRVAL1/2`,
+`CRPIX1/2`, `CD1_1..CD2_2`, `CROTA1/2`. Persistence rides the normal save step; solver stamps are
+not subject to UPDATE_NEW-vs-FORCE (solved values always win — disk is truth); file-level PROTECT
+still refuses the save entirely. None of these names may enter `RemoveUnwantedKeywords`.
+
+Mechanics (`Solver/AstapSolver.cs`): uncompressed XISF → `astap_cli -f` directly (read-only);
+compressed → AL `XisfImageReader` → minimal temp mono FITS (UInt16 only; else per-file failure).
+Hints from AL `XisfHeaderReader` (`-ra` RA/15, `-spd` Dec+90, `-fov` field height; blind `-r 180`
+fallback); always `-o <temp>` so `.ini`/`.wcs` never land beside library images; 60 s timeout;
+`.ini` `PLTSOLVD` gate with ASTAP's exit-code table as fallback messages. Position angle = AL
+`WcsOrientation.FromCdMatrix` + the ASTAP convention bridge (`360 − (Rotation − 180)`, parity
+inverted — NINA `ASTAPSolver`'s bridge, deliberately kept out of AL's generic math). A failed solve
+stamps nothing, is reported in a single post-browse summary, and never stops the pass; a missing
+ASTAP install refuses a checked browse up front (expected at `XisfConstants.AstapCliPath`).
 
 ### Enums (`Globals/Globals.cs`)
 

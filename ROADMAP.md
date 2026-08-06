@@ -24,6 +24,19 @@
 
 ## Recently shipped
 
+- **ASTAP plate solving in the read pass (`astap-plate-solve`, 2026-08-06)** — Directory Selection
+  "Solver" checkbox: checked browses solve every light frame with the local ASTAP CLI (compressed
+  frames decode through AL `Astronomy.XISF`, temp-FITS hop; uncompressed solve in place, `-o` temp
+  redirect) and stamp measured `RA`/`DEC`/`OBJCTROT` + full WCS via `KeywordList.SetPlateSolution`;
+  persistence rides the normal save (solved values always win; PROTECT still refuses). Second AL
+  dependency (`Astronomy.Core` — `WcsOrientation`; ASTAP's 180°+parity bridge stays in
+  `Solver\AstapSolver`). Field verification pending: one known-field absolute-PA sanity check, then
+  a `°(M)` backlog batch → save → TSM rescan → framings leave mechanical fallback.
+- **AL block codec adopted; vendored duplicate retired (`adopt-al-xisf-compression`, 2026-08-06)** —
+  first AL `ProjectReference` (`Astronomy.XISF`); same zlib+sh+SHA-1 writes; `Parse` now fails fast
+  on malformed known-codec attributes; release gate fixed to arm on any `Astronomy.*.dll` and now
+  **ARMED** (publish AL before releasing XFM). Two-tier keyword structure + AL property-first
+  migration direction documented in `ARCHITECTURE.md`.
 - **Released `v2.0.1` (2026-08-02)** — ships the title/MinVer fix below; first release with a
   Velopack delta package (valid baseline: local `Releases\` still held the published 2.0.0).
 - **Window title = app name + version; MinVer adopted (2026-08-02)** — title is now

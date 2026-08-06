@@ -168,6 +168,17 @@ namespace XisfFileManager
         {
             ResetSession();
 
+            // Solver checked but ASTAP absent: refuse the browse up front (fail fast), never skip silently.
+            if (CheckBox_Solver.Checked && !Solver.AstapSolver.IsInstalled)
+            {
+                MessageBox.Show(
+                    "ASTAP solver not found at:\n\n" + Configuration.XisfConstants.AstapCliPath +
+                    "\n\nInstall ASTAP (with a star database) or uncheck Solver.",
+                    "Plate Solver Not Found");
+                UpdateUI(eUiState.DISABLED);
+                return;
+            }
+
             if (!TrySelectSourceFolder())
                 return;
 
@@ -252,6 +263,14 @@ namespace XisfFileManager
             ProgressBar_FileSelection_ReadProgress.Maximum = Files.DirectoryOperations.FileInfoList.Count;
 
 
+            // Plate solving rides the read pass (astap-plate-solve): all light frames, masters excluded
+            // (their own checkbox path); solved values land in the in-memory KeywordList and persist
+            // through the normal save step.
+            bool solverEnabled = CheckBox_Solver.Checked
+                && !CheckBox_FileSelection_DirectorySelection_Masters_Enable.Checked;
+            int solvedCount = 0;
+            List<string> solveFailures = new();
+
             foreach (FileInfo xFile in Files.DirectoryOperations.FileInfoList)
             {
                 Label_FileSelection_BrowseFileName.Text = xFile.DirectoryName + "\n" + xFile.Name;
@@ -265,10 +284,39 @@ namespace XisfFileManager
 
                 await mXmlReader.ReadXisfFileHeaderKeywords(mFile);
 
+                if (solverEnabled && mFile.FrameType == eFrame.LIGHT)
+                {
+                    Label_FileSelection_BrowseFileName.Text = xFile.DirectoryName + "\nSolving: " + xFile.Name;
+                    Solver.SolveResult solution = await Solver.AstapSolver.SolveAsync(mFile.FilePath, mFile.IsImageCompressed);
+                    if (solution.Success)
+                    {
+                        mFile.KeywordList.SetPlateSolution(solution);
+                        solvedCount++;
+                    }
+                    else
+                    {
+                        solveFailures.Add(xFile.Name + " — " + solution.ErrorText);
+                    }
+                }
+
                 mFileList.Add(mFile);
             }
 
             mFileList.Sort((a, b) => a.CaptureTime.CompareTo(b.CaptureTime)); // oldest is first
+
+            if (solverEnabled)
+            {
+                Label_FileSelection_Statistics_OperationStatus.Text =
+                    $"Read {mFileList.Count} Image Files; Solved {solvedCount}" +
+                    (solveFailures.Count > 0 ? $", {solveFailures.Count} failed" : "");
+                if (solveFailures.Count > 0)
+                {
+                    MessageBox.Show(
+                        $"Solved {solvedCount} of {solvedCount + solveFailures.Count} light frames.\n\nFailed:\n\n"
+                        + string.Join("\n", solveFailures),
+                        "Plate Solve Results");
+                }
+            }
         }
 
         private void PopulateUiFromFiles()

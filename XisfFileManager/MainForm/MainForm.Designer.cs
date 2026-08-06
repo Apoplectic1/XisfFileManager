@@ -39,6 +39,7 @@
             RadioButton_FileSelection_SequenceNumbering_IndexWeight = new RadioButton();
             RadioButton_FileSelection_SequenceNumbering_WeightIndex = new RadioButton();
             GroupBox_FileSelection_DirectorySelection = new GroupBox();
+            CheckBox_Solver = new CheckBox();
             CheckBox_FileSelection_DirectorySelection_CalibrationIds = new CheckBox();
             GroupBox_FileSelection_DirectorySelection_FluxDensity = new GroupBox();
             Button_FileSelection_DirectorySelection_FluxDensity_Run = new Button();
@@ -193,7 +194,6 @@
             RadioButton_KeywordsTab_ImageType_Filter_Green = new RadioButton();
             RadioButton_KeywordsTab_ImageType_Filter_O3 = new RadioButton();
             TabControl = new TabControl();
-            checkBox1 = new CheckBox();
             GroupBox_FileSelection_SequenceNumbering.SuspendLayout();
             GroupBox_FileSelection_Count.SuspendLayout();
             GroupBox_FileSelection_DirectorySelection.SuspendLayout();
@@ -333,7 +333,7 @@
             // 
             // GroupBox_FileSelection_DirectorySelection
             // 
-            GroupBox_FileSelection_DirectorySelection.Controls.Add(checkBox1);
+            GroupBox_FileSelection_DirectorySelection.Controls.Add(CheckBox_Solver);
             GroupBox_FileSelection_DirectorySelection.Controls.Add(CheckBox_FileSelection_DirectorySelection_CalibrationIds);
             GroupBox_FileSelection_DirectorySelection.Controls.Add(GroupBox_FileSelection_DirectorySelection_FluxDensity);
             GroupBox_FileSelection_DirectorySelection.Controls.Add(GroupBox_FileSelection_DirectorySelection_Masters);
@@ -349,6 +349,16 @@
             GroupBox_FileSelection_DirectorySelection.TabIndex = 7;
             GroupBox_FileSelection_DirectorySelection.TabStop = false;
             GroupBox_FileSelection_DirectorySelection.Text = "Directory Selection";
+            // 
+            // CheckBox_Solver
+            // 
+            CheckBox_Solver.AutoSize = true;
+            CheckBox_Solver.Location = new Point(129, 46);
+            CheckBox_Solver.Name = "CheckBox_Solver";
+            CheckBox_Solver.Size = new Size(58, 19);
+            CheckBox_Solver.TabIndex = 25;
+            CheckBox_Solver.Text = "Solver";
+            CheckBox_Solver.UseVisualStyleBackColor = true;
             // 
             // CheckBox_FileSelection_DirectorySelection_CalibrationIds
             // 
@@ -2110,16 +2120,6 @@
             TabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             TabControl.Selecting += TabControl_Selecting;
             // 
-            // checkBox1
-            // 
-            checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(129, 46);
-            checkBox1.Name = "checkBox1";
-            checkBox1.Size = new Size(82, 19);
-            checkBox1.TabIndex = 25;
-            checkBox1.Text = "checkBox1";
-            checkBox1.UseVisualStyleBackColor = true;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -2344,6 +2344,6 @@
         private System.Windows.Forms.GroupBox GroupBox_FileSelection_DirectorySelection_Masters;
         private System.Windows.Forms.GroupBox GroupBox_FileSelection_DirectorySelection_FluxDensity;
         private CheckBox CheckBox_FileSelection_DirectorySelection_CalibrationIds;
-        private CheckBox checkBox1;
+        private CheckBox CheckBox_Solver;
     }
 }

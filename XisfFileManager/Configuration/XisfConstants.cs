@@ -14,5 +14,9 @@ namespace XisfFileManager.Configuration
 
         // Checksum written alongside compression, computed over the stored (compressed) bytes.
         public const string ChecksumAlgorithm = "sha-1";
+
+        // Local ASTAP plate-solver CLI (astap-plate-solve, 2026-08-06). Constant, not a setting:
+        // promote to Properties.Settings only if a second machine ever needs a different path.
+        public const string AstapCliPath = @"C:\Program Files\astap\astap_cli.exe";
     }
 }
