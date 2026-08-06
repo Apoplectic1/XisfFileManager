@@ -1,6 +1,7 @@
 using System.Text;
 using System.Xml;
 using XisfFileManager.Configuration;
+using Astronomy.Diagnostics;
 using Astronomy.XISF.Compression;
 using XisfFileManager.Files.XML;
 using XisfFileManager.Globals;
@@ -83,6 +84,7 @@ namespace XisfFileManager.Files
             if (xFile.KeywordUpdateMode == eKeywordUpdateMode.PROTECT)
             {
                 LastUpdateOutcome = eUpdateOutcome.Protected;
+                Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: Protected (not written)");
                 return true;
             }
 
@@ -95,6 +97,7 @@ namespace XisfFileManager.Files
 
             if (delay == 100)
             {
+                Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (file locked)");
                 MessageBox.Show("File is locked", xFile.FilePath, MessageBoxButtons.OK);
                 LastUpdateOutcome = eUpdateOutcome.Failed;
                 return false;
@@ -109,6 +112,7 @@ namespace XisfFileManager.Files
             if (xFile.KeywordUpdateMode == eKeywordUpdateMode.UPDATE_NEW && KeywordsMatchXml(xFile) && xFile.IsImageCompressed)
             {
                 LastUpdateOutcome = eUpdateOutcome.Skipped;
+                Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: Skipped (keywords match, already compressed)");
                 return true;
             }
 
@@ -319,20 +323,24 @@ namespace XisfFileManager.Files
                     if (bStatus == false)
                     {
                         LastUpdateOutcome = eUpdateOutcome.Failed;
+                        Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (binary write)");
                         return false;
                     }
 
                     LastUpdateOutcome = compressNow ? eUpdateOutcome.Compressed : eUpdateOutcome.AlreadyCompressed;
+                    Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: {LastUpdateOutcome} -> {destinationPath}");
                 }
             }
             catch (IOException ex)
             {
+                Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (I/O)", ex);
                 MessageBox.Show($"Update Write File Failed: {ex.Message}", xFile.FilePath, MessageBoxButtons.OK);
                 LastUpdateOutcome = eUpdateOutcome.Failed;
                 return false;
             }
             catch (Exception ex)
             {
+                Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (unexpected)", ex);
                 MessageBox.Show($"Unexpected error updating file: {ex.Message}", xFile.FilePath, MessageBoxButtons.OK);
                 LastUpdateOutcome = eUpdateOutcome.Failed;
                 return false;
