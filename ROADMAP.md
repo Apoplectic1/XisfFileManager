@@ -13,6 +13,15 @@
 6. **Verify input checksums on read** (was #7) — XFM writes SHA-1 checksums but does not validate an existing block's checksum on load; could warn on mismatch (corruption detection).
 7. **AL adoption prep (sln membership)** — when `Astronomy.*` `ProjectReference`s land, also add those projects to `XisfFileManager.sln` with config mappings (`Debug|x64`/`Release|x64` ActiveCfg **and** Build.0; Any CPU → Any CPU; x86 rows ActiveCfg-only onto x64). TP lesson 2026-08-02: sln builds *unset* Configuration/Platform for non-member references → silent **Debug** AL DLLs in dev builds. XFM's release path is immune (project-level publish flows Configuration), and `release.ps1`'s conditional AL gate arms itself when `Astronomy.Core.dll` appears in the payload. Verify with `dotnet build XisfFileManager.sln -c Release`: every `Astronomy.* ->` line must say `x64\Release`.
 
+8. **Revisit UPDATE_NEW/FORCE/PROTECT — plan what the keyword-update modes mean (user, 2026-08-06)** —
+   properly define the three `eKeywordUpdateMode` semantics and how they interact with feature
+   writes, then align call sites. Observations that triggered it (astap-plate-solve planning):
+   PROTECT is really a **file-level refusal in the common save path** (`UpdateFileAsync`'s
+   centralized gate) and should stay independent of every feature, the solver included; the
+   solver's "solved values always win — disk is truth" decision bypasses the UPDATE_NEW-vs-FORCE
+   distinction entirely, a hint the per-keyword mode split may not be carrying its weight. Design
+   task, not a quick fix.
+
 ## Recently shipped
 
 - **Released `v2.0.1` (2026-08-02)** — ships the title/MinVer fix below; first release with a
