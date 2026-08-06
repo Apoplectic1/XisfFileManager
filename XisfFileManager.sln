@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astronomy.XISF", "..\Librar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astronomy.Core", "..\Library\Astronomy.Core\Astronomy.Core.csproj", "{B7F2A9D4-3C18-4E5F-9A2B-6D8F1C3E7A52}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astronomy.Diagnostics", "..\Library\Astronomy.Diagnostics\Astronomy.Diagnostics.csproj", "{2416A5F8-2A66-418D-B112-21F736347855}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astronomy.Diagnostics.WinForms", "..\Library\Astronomy.Diagnostics.WinForms\Astronomy.Diagnostics.WinForms.csproj", "{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +59,30 @@ Global
 		{B7F2A9D4-3C18-4E5F-9A2B-6D8F1C3E7A52}.Release|x64.Build.0 = Release|x64
 		{B7F2A9D4-3C18-4E5F-9A2B-6D8F1C3E7A52}.Release|x86.ActiveCfg = Release|Any CPU
 		{B7F2A9D4-3C18-4E5F-9A2B-6D8F1C3E7A52}.Release|x86.Build.0 = Release|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Debug|x64.ActiveCfg = Debug|x64
+		{2416A5F8-2A66-418D-B112-21F736347855}.Debug|x64.Build.0 = Debug|x64
+		{2416A5F8-2A66-418D-B112-21F736347855}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Debug|x86.Build.0 = Debug|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Release|x64.ActiveCfg = Release|x64
+		{2416A5F8-2A66-418D-B112-21F736347855}.Release|x64.Build.0 = Release|x64
+		{2416A5F8-2A66-418D-B112-21F736347855}.Release|x86.ActiveCfg = Release|Any CPU
+		{2416A5F8-2A66-418D-B112-21F736347855}.Release|x86.Build.0 = Release|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Debug|x64.ActiveCfg = Debug|x64
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Debug|x64.Build.0 = Debug|x64
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Debug|x86.Build.0 = Debug|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Release|x64.ActiveCfg = Release|x64
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Release|x64.Build.0 = Release|x64
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Release|x86.ActiveCfg = Release|Any CPU
+		{03D21C03-A6B7-4940-A3B9-C23CCEFA90B9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

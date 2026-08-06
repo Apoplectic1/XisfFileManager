@@ -24,6 +24,11 @@
 
 ## Recently shipped
 
+- **Diagnostics adopted: xfm.log + Ctrl+N (`adopt-diagnostics`, 2026-08-06)** — shared
+  `Astronomy.Diagnostics` (+ new `.WinForms` dialog satellite, which TP also consumes now): log
+  rotation at startup, `XFM_DIAG` channels, Ctrl+N observation dialog with screenshots + context
+  snapshot; solver + Browse read pass instrumented (per-solve Info/Error, gated SOLVER channel with
+  args + raw `.ini`). Adopted ahead of debugging the checked-Solver browse issues.
 - **ASTAP plate solving in the read pass (`astap-plate-solve`, 2026-08-06)** — Directory Selection
   "Solver" checkbox: checked browses solve every light frame with the local ASTAP CLI (compressed
   frames decode through AL `Astronomy.XISF`, temp-FITS hop; uncompressed solve in place, `-o` temp

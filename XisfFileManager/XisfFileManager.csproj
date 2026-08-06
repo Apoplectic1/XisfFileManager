@@ -87,6 +87,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Library\Astronomy.XISF\Astronomy.XISF.csproj" />
     <ProjectReference Include="..\..\Library\Astronomy.Core\Astronomy.Core.csproj" />
+    <ProjectReference Include="..\..\Library\Astronomy.Diagnostics\Astronomy.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\Library\Astronomy.Diagnostics.WinForms\Astronomy.Diagnostics.WinForms.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />

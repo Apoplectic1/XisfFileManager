@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Astronomy.Core.Astrometry;
+using Astronomy.Diagnostics;
 using Astronomy.XISF;
 using XisfFileManager.Configuration;
 
@@ -60,8 +61,13 @@ namespace XisfFileManager.Solver
         public static async Task<SolveResult> SolveAsync(string filePath, bool isCompressed, CancellationToken ct = default)
         {
             string tempBase = Path.Combine(Path.GetTempPath(), "xfm-astap-" + Guid.NewGuid().ToString("N"));
+            string name = Path.GetFileName(filePath);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            SolveResult result;
             try
             {
+                Log.Diag("SOLVER", $"start {filePath} compressed={isCompressed}");
+
                 // Hints from the header (shared library read — identical for compressed/uncompressed).
                 XisfHeader header = await XisfHeaderReader.ReadAsync(filePath, ct);
 
@@ -71,10 +77,11 @@ namespace XisfFileManager.Solver
                     XisfImageData image = await XisfImageReader.ReadImageAsync(filePath, ct);
                     if (image.SampleFormat != "UInt16" || image.Channels != 1)
                     {
-                        return Fail($"unsupported solve input ({image.SampleFormat}, {image.Channels} channel(s)) — UInt16 mono only");
+                        return LogOutcome(Fail($"unsupported solve input ({image.SampleFormat}, {image.Channels} channel(s)) — UInt16 mono only"), name, stopwatch);
                     }
                     solveInput = tempBase + ".fit";
                     WriteMinimalFits(solveInput, image);
+                    Log.Diag("SOLVER", $"temp FITS {image.Width}x{image.Height} -> {solveInput}");
                 }
                 else
                 {
@@ -82,18 +89,20 @@ namespace XisfFileManager.Solver
                 }
 
                 string args = BuildArguments(solveInput, tempBase, header);
+                Log.Diag("SOLVER", $"args: {args}");
                 (int exitCode, bool timedOut) = await RunAstapAsync(args, ct);
+                Log.Diag("SOLVER", $"exit={exitCode} timedOut={timedOut}");
                 if (timedOut)
                 {
-                    return Fail($"solver timed out after {SolveTimeoutMs / 1000} s");
+                    return LogOutcome(Fail($"solver timed out after {SolveTimeoutMs / 1000} s"), name, stopwatch);
                 }
 
-                return ParseIni(tempBase + ".ini", exitCode);
+                result = ParseIni(tempBase + ".ini", exitCode);
             }
             catch (InvalidDataException ex)
             {
                 // Malformed/corrupt XISF surfaced by the library's fail-fast read.
-                return Fail(ex.Message);
+                result = Fail(ex.Message);
             }
             finally
             {
@@ -102,6 +111,23 @@ namespace XisfFileManager.Solver
                     try { File.Delete(tempBase + ext); } catch { /* best-effort temp cleanup */ }
                 }
             }
+
+            return LogOutcome(result, name, stopwatch);
+        }
+
+        private static SolveResult LogOutcome(SolveResult result, string name, Stopwatch stopwatch)
+        {
+            stopwatch.Stop();
+            if (result.Success)
+            {
+                Log.Info(string.Create(CultureInfo.InvariantCulture,
+                    $"ASTAP solved {name}: PA={result.PositionAngleDegrees:0.00} RA={result.RaDegrees:0.0000} DEC={result.DecDegrees:0.0000} flipped={result.Flipped} ({stopwatch.ElapsedMilliseconds} ms)"));
+            }
+            else
+            {
+                Log.Error($"ASTAP failed {name}: {result.ErrorText} ({stopwatch.ElapsedMilliseconds} ms)");
+            }
+            return result;
         }
 
         private static SolveResult Fail(string reason) => new() { Success = false, ErrorText = reason };
@@ -173,6 +199,11 @@ namespace XisfFileManager.Solver
             if (!File.Exists(iniPath))
             {
                 return Fail($"solver produced no result file ({DescribeExitCode(exitCode)})");
+            }
+
+            if (Log.IsDiagEnabled("SOLVER"))
+            {
+                Log.Diag("SOLVER", "ini: " + string.Join(" | ", File.ReadLines(iniPath)));
             }
 
             Dictionary<string, string> ini = File.ReadLines(iniPath)

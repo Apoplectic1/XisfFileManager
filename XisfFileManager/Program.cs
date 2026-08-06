@@ -24,6 +24,17 @@ namespace XisfFileManager
         {
             VelopackApp.Build().Run();
 
+            // Shared diagnostics log (Astronomy.Diagnostics): rotate xfm.log -> xfm.log.prev and start
+            // fresh — each run's trail is self-contained, one run back kept for postmortem. Diag
+            // channels default to all in Debug / off in Release; XFM_DIAG overrides at runtime.
+#if DEBUG
+            const Astronomy.Diagnostics.DiagDefault diag = Astronomy.Diagnostics.DiagDefault.All;
+#else
+            const Astronomy.Diagnostics.DiagDefault diag = Astronomy.Diagnostics.DiagDefault.None;
+#endif
+            Astronomy.Diagnostics.Log.Init(new Astronomy.Diagnostics.AppLogIdentity("XisfFileManager", "xfm.log", "XFM_DIAG", diag));
+            Astronomy.Diagnostics.Log.StartNewSession();
+
             CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("en-US");
             CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-US");
 

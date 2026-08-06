@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
+using Astronomy.Diagnostics;
+using Astronomy.Diagnostics.WinForms;
 using Velopack;
 using Velopack.Sources;
 using XisfFileManager.Calculations;
@@ -171,8 +173,9 @@ namespace XisfFileManager
             // Solver checked but ASTAP absent: refuse the browse up front (fail fast), never skip silently.
             if (CheckBox_Solver.Checked && !Solver.AstapSolver.IsInstalled)
             {
+                Log.Error("Browse refused: Solver checked but ASTAP not found at " + XisfConstants.AstapCliPath);
                 MessageBox.Show(
-                    "ASTAP solver not found at:\n\n" + Configuration.XisfConstants.AstapCliPath +
+                    "ASTAP solver not found at:\n\n" + XisfConstants.AstapCliPath +
                     "\n\nInstall ASTAP (with a star database) or uncheck Solver.",
                     "Plate Solver Not Found");
                 UpdateUI(eUiState.DISABLED);
@@ -270,6 +273,7 @@ namespace XisfFileManager
                 && !CheckBox_FileSelection_DirectorySelection_Masters_Enable.Checked;
             int solvedCount = 0;
             List<string> solveFailures = new();
+            Log.Info($"Browse read start: {Files.DirectoryOperations.FileInfoList.Count} files, solver={solverEnabled}");
 
             foreach (FileInfo xFile in Files.DirectoryOperations.FileInfoList)
             {
@@ -303,6 +307,8 @@ namespace XisfFileManager
             }
 
             mFileList.Sort((a, b) => a.CaptureTime.CompareTo(b.CaptureTime)); // oldest is first
+
+            Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, failed={solveFailures.Count}");
 
             if (solverEnabled)
             {
@@ -753,6 +759,35 @@ namespace XisfFileManager
 
                 Button_FileSelection_DirectorySelection_FluxDensity_Run.Enabled = false;
                 CheckBox_FileSlection_DirectorySelection_NoStatistics.Checked = noStaticsState;
+            }
+        }
+
+        // Ctrl+N opens (or focuses) the shared diagnostics dialog (Astronomy.Diagnostics.WinForms).
+        // Modeless + TopMost; USER_OBS_START/END/CANCEL markers in xfm.log bracket the observation.
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.N))
+            {
+                DiagnosticsDialog.ShowOrFocus(this, GetDiagnosticsContext);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        // App-state snapshot for the USER_OBS_END line — the report carries the session context
+        // without the user having to type it.
+        private string GetDiagnosticsContext()
+        {
+            try
+            {
+                return $"(files={mFileList.Count}, tab={TabControl.SelectedTab?.Text ?? "?"}, "
+                     + $"solver={CheckBox_Solver.Checked}, masters={CheckBox_FileSelection_DirectorySelection_Masters_Enable.Checked}, "
+                     + $"recurse={CheckBox_FileSelection_DirectorySelection_Recurse.Checked}, "
+                     + $"status=\"{Label_FileSelection_Statistics_OperationStatus.Text}\")";
+            }
+            catch (Exception ex)
+            {
+                return "(context unavailable: " + ex.Message + ")";
             }
         }
 

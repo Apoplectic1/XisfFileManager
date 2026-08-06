@@ -87,6 +87,19 @@ deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
 - Always stores the compressed result (even if not smaller) so a block marks itself done and isn't
   re-attempted on every save.
 
+## Diagnostics — xfm.log + Ctrl+N (adopted 2026-08-06)
+
+XFM consumes the portfolio's shared diagnostics contract (`Astronomy.Diagnostics` +
+`Astronomy.Diagnostics.WinForms` — third/fourth AL references): `Log.Init` in `Program.cs` writes
+`%APPDATA%\XisfFileManager\Logs\xfm.log` (rotated to `.prev` each run; `XFM_DIAG` env var gates the
+diag channels, default all-Debug/none-Release), and **Ctrl+N** opens the shared observation dialog
+(`DiagnosticsDialog.ShowOrFocus` in `MainForm.ProcessCmdKey`) — USER_OBS_START/CAP/END/CANCEL
+markers + screenshots under `Logs\screenshots\`, with `GetDiagnosticsContext()` stamping loaded-file
+count, tab, and checkbox states into the END line. Instrumented so far: the Browse read pass
+(bracket Info lines) and the solver (`Log.Info` per solve outcome/duration, `Log.Error` on failures,
+gated `Diag("SOLVER", …)` with CLI args + raw `.ini`). Convention: new error paths get a `Log.Error`
+twin beside any MessageBox so dialogs are never the only record.
+
 ## Keywords
 
 ### Two-tier structure (verified 2026-08-06)
