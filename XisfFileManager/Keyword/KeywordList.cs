@@ -824,9 +824,12 @@ namespace XisfFileManager
         {
             System.Globalization.CultureInfo inv = System.Globalization.CultureInfo.InvariantCulture;
 
-            AddKeyword("RA", solution.RaDegrees.ToString("0.######", inv), "[deg] Solved right ascension of frame center (ASTAP)");
-            AddKeyword("DEC", solution.DecDegrees.ToString("0.######", inv), "[deg] Solved declination of frame center (ASTAP)");
-            RotatorSkyAngle = solution.PositionAngleDegrees;   // OBJCTROT — measured, replaces planned
+            // " - ASTAP" comment suffix = the visual measured-vs-planned marker in header viewers.
+            // (PixInsight regenerates RA/DEC comments from its ingested solution, so in PI the marker
+            // shows on OBJCTROT; raw header views show it on all three.)
+            AddKeyword("RA", solution.RaDegrees.ToString("0.######", inv), "[deg] Right ascension of frame center - ASTAP");
+            AddKeyword("DEC", solution.DecDegrees.ToString("0.######", inv), "[deg] Declination of frame center - ASTAP");
+            AddKeyword("OBJCTROT", solution.PositionAngleDegrees.ToString(inv), "[degrees] Image Sky Angle at Frame Center - ASTAP");
 
             AddKeyword("CTYPE1", "RA---TAN", "Solved WCS projection (ASTAP)");
             AddKeyword("CTYPE2", "DEC--TAN", "Solved WCS projection (ASTAP)");
