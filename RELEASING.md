@@ -69,8 +69,10 @@ git push origin main vX.Y.Z
 - The app's `Velopack` NuGet package and the `vpk` CLI should stay on matching versions
   (both 1.2.0 as of 2026-08-02) — `vpk pack` warns on skew.
 
-Latest released tag: **`v2.0.1`** (`v2.0.0` was the first script-built release; `v1.9.0` and
-earlier were CI-built).
+Latest released tag: **`v2.1.0`** (ASTAP plate solving in the read pass + shared diagnostics
+adoption; first release carrying AL DLLs — `Astronomy.XISF`/`Core`/`Diagnostics`(+`.WinForms`)
+stamped `1.5.0`, the armed AL gate's first live pass). Prior: `v2.0.1` (`v2.0.0` was the first
+script-built release; `v1.9.0` and earlier were CI-built).
 
 ## Content rules (what is deliberately public)
 
