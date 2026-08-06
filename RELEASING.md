@@ -26,13 +26,14 @@ pre-policy branches pruned 2026-08-02 — their history remains on local branche
   not on a schedule, and never mid-change. The working tree must be clean and the build
   warning-free at the published commit (see `VERIFICATION.md`). No tag → no push: the tag is
   what makes a `main` state a published state.
-- **AL coordination (pre-flight; staged 2026-08-02, ahead of XFM's planned AL adoption):**
-  once XFM consumes the sibling `..\Library` via `ProjectReference`, the installer embeds the
-  Library **working tree** at pack time, unpinned. If AL is dirty or has moved past its last
-  published tag, **publish AL first** (see Library `RELEASING.md`) so the payload's
-  `Astronomy.*` DLLs stamp a clean `X.Y.Z` that exists on AL's public mirror. `release.ps1`
-  carries this gate conditionally — it arms itself when `Astronomy.Core.dll` appears in the
-  publish output, so it's inert until the dependency lands.
+- **AL coordination (pre-flight; staged 2026-08-02, ARMED 2026-08-06):** XFM consumes the
+  sibling `..\Library` via `ProjectReference` (`Astronomy.XISF`, the shared block codec — first
+  AL dependency, `adopt-al-xisf-compression`), so the installer embeds the Library **working
+  tree** at pack time, unpinned. If AL is dirty or has moved past its last published tag,
+  **publish AL first** (see Library `RELEASING.md`) so the payload's `Astronomy.*` DLLs stamp a
+  clean `X.Y.Z` that exists on AL's public mirror. `release.ps1` checks every `Astronomy.*.dll`
+  in the publish output (not just `Astronomy.Core.dll` — XFM ships `Astronomy.XISF.dll` and no
+  Core).
 - **Docs-only exception (2026-08-02):** a `main` push may omit the tag when the delta contains
   only documentation/images — nothing that changes the built app — so the GitHub storefront
   (README, screenshots) can update without minting a release. Any change to code or build

@@ -1,7 +1,7 @@
-﻿using System.Text;
+using System.Text;
 using System.Xml;
 using XisfFileManager.Configuration;
-using XisfFileManager.Files.Compression;
+using Astronomy.XISF.Compression;
 using XisfFileManager.Files.XML;
 using XisfFileManager.Globals;
 using XisfFileManager.Helpers;

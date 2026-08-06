@@ -81,6 +81,12 @@
   <ItemGroup>
     <Content Include="XisfFileManager.ico" />
   </ItemGroup>
+  <!-- First AL dependency (2026-08-06, adopt-al-xisf-compression): shared XISF block codec
+       replaces the vendored Files\Compression duplicate. Local sibling repo, no NuGet hop;
+       Astronomy.* DLLs in the payload arm the release-ordering gate (see RELEASING.md). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Library\Astronomy.XISF\Astronomy.XISF.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
   </ItemGroup>

@@ -1,6 +1,6 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using XisfFileManager.Files.Compression;
+using Astronomy.XISF.Compression;
 using XisfFileManager.Globals;
 
 namespace XisfFileManager.Files

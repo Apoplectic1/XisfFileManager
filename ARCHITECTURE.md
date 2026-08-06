@@ -64,15 +64,22 @@ XFM treats the image data block as an **opaque byte array** — nothing in the a
 to `zlib+sh` (plain `zlib`, no shuffle, for 1-byte samples) with a SHA-1 checksum; an
 already-compressed block (any codec) is copied verbatim.
 
-### Compression (`Files/Compression/`)
+### Compression (consumed from AL — `Astronomy.XISF.Compression`)
 
-- `XisfBlockCompression` — pure, UI-free codec: byte-shuffle → `System.IO.Compression.ZLibStream`
-  (`SmallestSize` ≈ zlib level 9 ≈ PixInsight "level 100") → SHA-1 over the compressed bytes.
-  `Compress`/`Decompress` are symmetric; `Decompress` is present for future pixel I/O but is not yet
-  wired into any runtime path (XFM blocks are opaque; no test project exists — see `VERIFICATION.md`).
-- `BlockCompressionInfo` — parses/formats both codec grammars, `compression="zlib+sh:size:itemSize"`
-  and `compression="zlib:size"`, plus `checksum="sha-1:hex"`; read at load time into
-  `XisfFile.Compression` / `IsImageCompressed`.
+Since 2026-08-06 (`adopt-al-xisf-compression`) the codec comes from the sibling Library repo via
+`ProjectReference` — XFM's **first AL dependency**; the vendored `Files/Compression/` duplicate is
+deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
+
+- `XisfBlockCompression.Compress(raw, itemSize)` — unchanged call and unchanged bytes: byte-shuffle →
+  zlib (`SmallestSize` ≈ zlib level 9 ≈ PixInsight "level 100") → SHA-1 over the compressed bytes.
+  AL's layer also encodes/decodes lz4 / lz4hc / zstd (±shuffle) and all five XISF checksum
+  algorithms; XFM emits only zlib(+sh)+SHA-1 today (`XisfConstants.CompressionCodec`).
+- `BlockCompressionInfo` — same parse/emit surface, read at load time into `XisfFile.Compression` /
+  `IsImageCompressed`. Two deliberate deltas vs the vendored copy: `Parse` **fails fast**
+  (`InvalidDataException`) on a malformed attribute for a known codec (previously lenient zeros —
+  a malformed file now refuses to load), and `ToCompressionAttribute()` throws on a foreign
+  (`Other`) codec — unreachable here, since XFM only formats attributes for blocks it just
+  compressed (`ApplyCompressionAttributes` runs only under `compressNow`).
 - Item size (bytes/sample for the shuffle) comes from the `sampleFormat` attribute, falling back to
   `blockLength / (W×H×channels)` from `geometry`. Shuffle is applied when item size > 1 (`zlib+sh`);
   1-byte samples take the no-shuffle branch and write plain `zlib`. A wrong item size only costs
@@ -81,6 +88,26 @@ already-compressed block (any codec) is copied verbatim.
   re-attempted on every save.
 
 ## Keywords
+
+### Two-tier structure (verified 2026-08-06)
+
+Both tiers live in `Keyword/` — cohabiting `KeywordList`, not split into two classes:
+
+- **Low tier** — `Keyword` (Name/Value/Comment POCO) plus the raw triple CRUD on `mKeywordList`:
+  `AddKeyword` / `GetKeyword` / `GetKeywordValue` / `GetKeywordComment` / `RemoveKeyword` /
+  `AddKeywordKeepDuplicates`. String-in/string-out against the actual keywords.
+- **High tier** — the ~35 typed properties (`ExposureSeconds`, `Gain`, `CaptureTime`, `FilterName`,
+  `RotatorSkyAngle`, …) that parse/format quantities and call the low tier in both directions, plus
+  workflow ops (`NormalizeExposure`, `NormalizeCaptureTime`, `SetMasterFrameKeywords`,
+  `RemoveUnwantedKeywords`). Getters return sentinels when the keyword is absent
+  (`double.MinValue`, `-1`, `0.0` — see the 2026-07-07 sentinel audit in `NOTEBOOK.md`).
+
+**Migration direction (2026-08-06):** this pipeline is the named target consumer of AL's future
+property-first metadata layer (Library `ROADMAP.md` → Tier 2): PixInsight is shifting from FITS
+keywords toward typed XISF properties, and AL will model properties as the primary surface with
+FITS keywords as a compatibility projection. The high tier is the migration **choke point** — new
+features (e.g. the ASTAP solve stamp) should write through the typed properties / high tier so the
+eventual swap re-plumbs one layer instead of rewriting features.
 
 Keywords follow FITS conventions with Name/Value/Comment triplets. Keywords XFM reads/writes
 (astronomy semantics behind them: `DOMAIN.md`):
@@ -110,8 +137,9 @@ Telescope keywords (`TELESCOP`, `FOCALLEN`, `APTDIA`, `APTAREA`, `FOCRATIO`) are
 - `eKeywordUpdateMode`: PROTECT, UPDATE_NEW, FORCE
 - `eUpdateOutcome`: result reporting for `XisfFileUpdate.LastUpdateOutcome`
 - `eMessageMode`, `eBufferData`, `eUiState`: messaging/buffer/UI state
-- Two enums live outside Globals.cs: `BlockCodec` (`Files/Compression/BlockCompressionInfo.cs`) and
-  `ExcludeType` (`Directories/DirectoryOperations.cs`) — both without the `e` prefix
+- Two enums live outside Globals.cs, both without the `e` prefix: `BlockCodec` (AL's
+  `Astronomy.XISF.Compression` since 2026-08-06; carries lz4/lz4hc/zstd members XFM never emits) and
+  `ExcludeType` (`Directories/DirectoryOperations.cs`)
 
 ## Code conventions
 

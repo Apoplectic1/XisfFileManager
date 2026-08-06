@@ -1,9 +1,9 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
-using XisfFileManager.Files.Compression;
+using Astronomy.XISF.Compression;
 
 namespace XisfFileManager.Files.XML
 {
