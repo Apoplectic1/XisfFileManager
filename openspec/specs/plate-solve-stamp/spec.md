@@ -1,13 +1,10 @@
-# plate-solve-stamp — delta
+# plate-solve-stamp Specification
 
 ## Purpose
-
 Measuring each light frame's real sky solution with the local ASTAP solver during XFM's read pass and
 stamping it into the frame's keywords — replacing planned pointing/rotation values with measured ones
 so downstream consumers reconcile against truth.
-
-## ADDED Requirements
-
+## Requirements
 ### Requirement: Checkbox-gated solving during the read pass
 When `CheckBox_Solver` is checked, the Browse/read pass SHALL plate-solve every **light** frame as it
 is read (re-solving frames that already carry a solution — measured always replaces planned). Master
@@ -81,3 +78,4 @@ expected location — no silent skip.
 #### Scenario: Solver not installed
 - **WHEN** a checked browse starts and the solver executable is absent
 - **THEN** the operation fails immediately with a message naming the expected path
+
