@@ -99,4 +99,5 @@ Releases/
 
 # Parked source, deliberately out of the project (see CLAUDE.md).
 # On disk for reference only; never built, referenced, or read.
-archive/
+# Anchored to the repo root: openspec/changes/archive/ IS tracked (versioned change history).
+/archive/
