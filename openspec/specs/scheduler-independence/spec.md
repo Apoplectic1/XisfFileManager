@@ -1,5 +1,7 @@
 # scheduler-independence
 
+## Purpose
+
 XFM operates with zero Target Scheduler coupling — no TS UI, no `scheduler.db`/SQLite access, no
 TS-related dependencies or test data. Established by the `remove-target-scheduler` change
 (2026-07-07, v1.9.0); guards against reintroduction.
