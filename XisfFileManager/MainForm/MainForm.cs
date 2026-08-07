@@ -556,7 +556,7 @@ namespace XisfFileManager
             int uncompressedCount = mFileList.Count - compressedCount;
             Label_FileSelection_Statistics_OperationStatus.Text =
                 readSummary + "\n" + compressedCount + " Compressed " + uncompressedCount + " Uncompressed"
-                + (mVerifyShaSummary is not null ? "\n" + mVerifyShaSummary : "");
+                + (mVerifyShaSummary is not null ? "  " + mVerifyShaSummary : "");
 
             Label_FileSelection_Statistics_SubFrameOverhead.Text = ImageCalculations.CalculateOverhead(mFileList);
             string stepsPerDegree = ImageCalculations.CalculateFocuserTemperatureCompensationCoefficient(mFileList);
