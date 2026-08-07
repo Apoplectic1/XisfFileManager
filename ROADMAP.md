@@ -55,8 +55,14 @@
 
 10. **FORCE-gated library recompress to zstd-19 (follow-on, decided 2026-08-07)** — one-time
     pass reclaiming ~26 GB (≈10%) by recompressing the existing zlib library at `zstd+sh(19)`;
-    runs **only when FORCE is on** (per #8 Q2: FORCE = the recompress trigger). Plan the pass
-    when picked up — after the zstd-19 new-write switch has field mileage. Numbers + method:
+    runs **only when FORCE is on** (per #8 Q2: FORCE = the recompress trigger). **Second payload:
+    recompression stamps a fresh SHA-1 on every rewritten block, converting no-checksum files
+    (compressed by pre-checksum producers; e.g. 90 of 184 in the first Verify-SHA field run) into
+    verifiable ones — Verify SHA coverage goes to 100% as a side effect.** Mechanics when
+    implemented: rides the normal Update save — FORCE flips `UpdateFileAsync`'s block branch from
+    "copy verbatim" to decode → recompress → fresh checksum (today FORCE re-serializes the file
+    but still copies the block verbatim; no recompress exists yet). Plan the pass when picked up —
+    after the zstd-19 new-write switch has field mileage. Numbers + method:
     `docs/2026-08-07-compression-benchmark.md`.
 
 ## Recently shipped
