@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Compression benchmark harness (2026-08-07): measures candidate XISF block codecs against the
+       real image library to choose XFM's write codec. Standalone tool — deliberately NOT a member of
+       XisfFileManager.sln (run via `dotnet run -\-project tools/CompressionBench`). Results graduate to
+       docs/ (dated benchmark record) and NOTEBOOK.md; keep the harness rerunnable, not throwaway. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Library\Astronomy.XISF\Astronomy.XISF.csproj" />
+    <!-- Direct zstd access for levels AL's Compress does not expose (it pins zstd level 1 for
+         NINA/PixInsight producer parity). Same package+version AL uses, so level-L output here
+         is byte-identical to what an AL Compress(level: L) overload would produce. -->
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
+  </ItemGroup>
+
+</Project>
