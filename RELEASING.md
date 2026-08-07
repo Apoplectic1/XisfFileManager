@@ -69,9 +69,11 @@ git push origin main vX.Y.Z
 - The app's `Velopack` NuGet package and the `vpk` CLI should stay on matching versions
   (both 1.2.0 as of 2026-08-02) — `vpk pack` warns on skew.
 
-Latest released tag: **`v2.1.1`** (solver diagnosability: `astap_cli -log` + failure-tail capture
-in the `SOLVER` diag channel; carries AL `1.5.1` — legacy `sha1` checksum tokens accepted on read,
-unblocking solves on 2019-era SGP files). Prior: `v2.1.0` (ASTAP plate solving in the read pass +
+Latest released tag: **`v2.2.0`** (checked browse skips pre-solved lights — full 11-keyword WCS
+set present ⇒ no solver run, re-browse is idempotent; solver checkbox now default-on; carries AL
+`1.5.1` unchanged). Prior: `v2.1.1` (solver diagnosability: `astap_cli -log` + failure-tail capture
+in the `SOLVER` diag channel; AL `1.5.1` — legacy `sha1` checksum tokens accepted on read,
+unblocking solves on 2019-era SGP files); `v2.1.0` (ASTAP plate solving in the read pass +
 shared diagnostics adoption; first release carrying AL DLLs — `Astronomy.XISF`/`Core`/`Diagnostics`(+`.WinForms`)
 stamped `1.5.0`, the armed AL gate's first live pass); `v2.0.1` (`v2.0.0` was the first
 script-built release; `v1.9.0` and earlier were CI-built).
