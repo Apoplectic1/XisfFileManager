@@ -2,7 +2,6 @@ using System.Text;
 using System.Xml;
 using XisfFileManager.Configuration;
 using Astronomy.Diagnostics;
-using Astronomy.XISF.Compression;
 using XisfFileManager.Files.XML;
 using XisfFileManager.Globals;
 using XisfFileManager.Helpers;
@@ -16,55 +15,6 @@ namespace XisfFileManager.Files
 
         /// <summary>Outcome of the most recent <see cref="UpdateFileAsync"/> call, for status reporting.</summary>
         public eUpdateOutcome LastUpdateOutcome { get; private set; }
-
-
-        /// <summary>
-        /// Extracts a substring from the source string that is between the specified start and end tokens.
-        /// </summary>
-        /// <param name="source">The source string to extract the value from.</param>
-        /// <param name="startToken">The token that marks the beginning of the value to extract.</param>
-        /// <param name="endToken">The token that marks the end of the value to extract.</param>
-        /// <returns>The extracted value if found; otherwise, an empty string.</returns>
-        private static string ExtractValue(string source, string startToken, string endToken)
-        {
-            int start = source.IndexOf(startToken);
-            if (start == -1) return "";
-
-            start += startToken.Length; // Move the start index to the end of the startToken
-            if (start >= source.Length) return "";
-
-            int end = source.IndexOf(endToken, start);
-            if (end == -1) return "";
-
-            return source.Substring(start, end - start).Trim();
-        }
-
-
-        /// <summary>
-        /// Extracts a substring from the source string that is between the specified start and end tokens,
-        /// and occurs after the preToken.
-        /// </summary>
-        /// <param name="source">The source string to extract the value from.</param>
-        /// <param name="preToken">The token that must precede the startToken in the source string.</param>
-        /// <param name="startToken">The token that marks the beginning of the value to extract.</param>
-        /// <param name="endToken">The token that marks the end of the value to extract.</param>
-        /// <returns>The extracted value if found; otherwise, an empty string.</returns>
-        private static string ExtractValue(string source, string preToken, string startToken, string endToken)
-        {
-            int preStart = source.IndexOf(preToken);
-            if (preStart == -1) return "";
-
-            // Adjust the starting position to search for startToken and endToken after preToken
-            string adjustedSource = source.Substring(preStart + preToken.Length);
-
-            int start = adjustedSource.IndexOf(startToken);
-            if (start == -1) return "";
-
-            int end = adjustedSource.IndexOf(endToken, start + startToken.Length);
-            if (end == -1) return "";
-
-            return adjustedSource.Substring(start + startToken.Length, end - (start + startToken.Length));
-        }
 
 
         // ##############################################################################################################################################
@@ -98,7 +48,6 @@ namespace XisfFileManager.Files
             if (delay == 100)
             {
                 Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (file locked)");
-                MessageBox.Show("File is locked", xFile.FilePath, MessageBoxButtons.OK);
                 LastUpdateOutcome = eUpdateOutcome.Failed;
                 return false;
             }
@@ -106,18 +55,18 @@ namespace XisfFileManager.Files
             // Normalize keywords before writing (converts CREATOR->SWCREATE, DATE-OBS->DATE-LOC, EXPOSURE->EXPTIME)
             xFile.NormalizeKeywords();
 
-            // "Save if needed": skip only when nothing would change. In UPDATE_NEW mode that means the keywords
-            // already match the on-disk XML AND the image block is already compressed. A keyword change OR an
-            // uncompressed block (compression needed) both require a rewrite. FORCE always writes.
-            if (xFile.KeywordUpdateMode == eKeywordUpdateMode.UPDATE_NEW && KeywordsMatchXml(xFile) && xFile.IsImageCompressed)
+            // "Save if needed": in UPDATE_NEW mode skip when the keywords already match the on-disk XML.
+            // The image block is always copied verbatim — compression is browse-hygiene's job
+            // (AL XisfBlockRewriter), never the save's. FORCE always writes.
+            if (xFile.KeywordUpdateMode == eKeywordUpdateMode.UPDATE_NEW && KeywordsMatchXml(xFile))
             {
                 LastUpdateOutcome = eUpdateOutcome.Skipped;
-                Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: Skipped (keywords match, already compressed)");
+                Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: Skipped (keywords match)");
                 return true;
             }
 
-            // Committed to writing this file (keyword change and/or compression). Report it now — before the
-            // potentially slow compress + write — so the UI shows the file that is actually being written.
+            // Committed to writing this file. Report it now — before the write — so the UI shows the
+            // file that is actually being written.
             onWriting?.Invoke(destinationPath);
 
             int xisfStart;
@@ -204,27 +153,8 @@ namespace XisfFileManager.Files
                     // *******************************************************************************************************************************
                     // *******************************************************************************************************************************
 
-                    // Compress the image data block (zstd+sh level 19 + SHA-1) unless it is already compressed.
-                    // Already-compressed blocks (any codec — the existing zlib library included) are copied
-                    // verbatim with their existing attributes; recompression is the FORCE-gated pass (ROADMAP #10).
-                    bool compressNow = !xFile.IsImageCompressed;
-                    BlockCompressionResult compressionResult = default;
-                    if (compressNow)
-                    {
-                        byte[] rawImageBlock = new byte[xFile.TargetAttachmentLength];
-                        Array.Copy(binaryFileData, xFile.TargetAttachmentStart, rawImageBlock, 0, xFile.TargetAttachmentLength);
-
-                        compressionResult = XisfBlockCompression.Compress(rawImageBlock, xFile.ItemSize,
-                            BlockCodec.Zstd, XisfConstants.CompressionZstdLevel);
-
-                        // Add compression/checksum to the <Image> before location/padding converge against the final header.
-                        ApplyCompressionAttributes(xmlDoc, compressionResult.Info);
-                    }
-
-                    // *******************************************************************************************************************************
-                    // *******************************************************************************************************************************
-
                     // We need to set the start address and length of the image attachement due to any changes in the <xisf> to </xisf> length
+                    // (the image block itself is always copied verbatim — compression is browse-hygiene's job).
 
                     if (xFile.BlockAlignmentSize != -1)
                     {
@@ -232,28 +162,26 @@ namespace XisfFileManager.Files
                         if (possibleBogusImageAttachmentLocation % xFile.BlockAlignmentSize != 0)
                         {
                             if ((possibleBogusImageAttachmentLocation - 1) % xFile.BlockAlignmentSize != 0)
-                                MessageBox.Show(Path.GetFileName(xFile.FilePath), "Image Attachment Start Location was not Block Aligned. Continuing...");
+                                Log.Warn($"Update {Path.GetFileName(xFile.FilePath)}: image attachment start not block-aligned; continuing");
                         }
                     }
-                    // When compressing, the stored block size becomes the compressed size; otherwise leave it unchanged.
-                    xFile.TargetAttachmentPadding = SetImageAttachmentLocation(xmlDoc, xFile,
-                        compressNow ? compressionResult.CompressedBytes.Length : (int?)null);
+                    xFile.TargetAttachmentPadding = SetImageAttachmentLocation(xmlDoc, xFile);
 
                     // *******************************************************************************************************************************
                     // *******************************************************************************************************************************
 
-                    // "XISF0100" is the XISF Signature. The length of the xml section is stored in the 8th and 9th bytes of the signature
-                    // Assumes that xmlLength is less than 65536 bytes
+                    // "XISF0100" is the XISF Signature. Bytes 8–11 carry the XML section's byte length as
+                    // 32-bit little-endian (full field per the XISF spec; parity with AL XisfBlockRewriter).
                     //                                                                X     I     S     F     0     1     0     0     0     0     0     0     0     0     0     0
                     byte[] xisfSignature = new byte[XisfConstants.SignatureSize] { 0x58, 0x49, 0x53, 0x46, 0x30, 0x31, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-                    // Set the new length of the new <xisf to /xisf> section
-                    int xmlLength = xmlDoc.OuterXml.Length;
+                    // Byte length (not char count) of the <xisf>...</xisf> section as written
+                    int xmlLength = Encoding.UTF8.GetByteCount(xmlDoc.OuterXml);
 
-                    // Change Endianess
-                    // Find the length of the <xisf>...</xisf> section
-                    xisfSignature[8] = (byte)(xmlLength & 0xFF); // Least significant byte
-                    xisfSignature[9] = (byte)((xmlLength >> 8) & 0xFF); // Most significant byte
+                    xisfSignature[8] = (byte)(xmlLength & 0xFF);
+                    xisfSignature[9] = (byte)((xmlLength >> 8) & 0xFF);
+                    xisfSignature[10] = (byte)((xmlLength >> 16) & 0xFF);
+                    xisfSignature[11] = (byte)((xmlLength >> 24) & 0xFF);
 
                     // *******************************************************************************************************************************
                     // *******************************************************************************************************************************
@@ -290,29 +218,14 @@ namespace XisfFileManager.Files
                     };
                     mBufferList.Add(mBuffer);
 
-                    // Main Image data, written after the padding:
-                    //  - compressed now  -> the freshly compressed (zlib+sh) bytes
-                    //  - already compressed -> a verbatim copy of the source block from binaryFileData
-                    if (compressNow)
+                    // Main Image data, written after the padding: always a verbatim copy of the source block
+                    mBuffer = new Buffer
                     {
-                        mBuffer = new Buffer
-                        {
-                            Type = eBufferData.BINARY,
-                            BinaryDataStart = 0,
-                            BinaryByteLength = compressionResult.CompressedBytes.Length,
-                            BinaryData = compressionResult.CompressedBytes
-                        };
-                    }
-                    else
-                    {
-                        mBuffer = new Buffer
-                        {
-                            Type = eBufferData.BINARY,
-                            BinaryDataStart = xFile.TargetAttachmentStart,
-                            BinaryByteLength = xFile.TargetAttachmentLength,
-                            BinaryData = binaryFileData
-                        };
-                    }
+                        Type = eBufferData.BINARY,
+                        BinaryDataStart = xFile.TargetAttachmentStart,
+                        BinaryByteLength = xFile.TargetAttachmentLength,
+                        BinaryData = binaryFileData
+                    };
                     mBufferList.Add(mBuffer);
 
                     // Ignore any other attachments (e.g. Thumbnail, High Rejection, Low Rejection, etc,) in the input file
@@ -329,21 +242,19 @@ namespace XisfFileManager.Files
                         return false;
                     }
 
-                    LastUpdateOutcome = compressNow ? eUpdateOutcome.Compressed : eUpdateOutcome.AlreadyCompressed;
+                    LastUpdateOutcome = eUpdateOutcome.Written;
                     Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: {LastUpdateOutcome} -> {destinationPath}");
                 }
             }
             catch (IOException ex)
             {
                 Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (I/O)", ex);
-                MessageBox.Show($"Update Write File Failed: {ex.Message}", xFile.FilePath, MessageBoxButtons.OK);
                 LastUpdateOutcome = eUpdateOutcome.Failed;
                 return false;
             }
             catch (Exception ex)
             {
                 Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (unexpected)", ex);
-                MessageBox.Show($"Unexpected error updating file: {ex.Message}", xFile.FilePath, MessageBoxButtons.OK);
                 LastUpdateOutcome = eUpdateOutcome.Failed;
                 return false;
             }
@@ -446,10 +357,8 @@ namespace XisfFileManager.Files
         /// </summary>
         /// <param name="document">The XML document to modify.</param>
         /// <param name="xFile">The XISF file containing block alignment size.</param>
-        /// <param name="newImageSize">When set, also update the location size field (used after compression
-        /// changes the stored block size); when null the existing size is preserved.</param>
         /// <returns>The calculated padding required for the new starting address.</returns>
-        private static int SetImageAttachmentLocation(XmlDocument document, XisfFile xFile, int? newImageSize = null)
+        private static int SetImageAttachmentLocation(XmlDocument document, XisfFile xFile)
         {
             int documentLengthBeforeNewStartingAddress;
             int documentLengthAfterNewStartingAddress;
@@ -466,10 +375,11 @@ namespace XisfFileManager.Files
             if (imageNode == null)
                 return -1;
 
-            // Iterate until the XML document length does not change
+            // Iterate until the XML document length does not change. Lengths are UTF-8 byte counts —
+            // the same measure the signature field and the file write use.
             do
             {
-                documentLengthBeforeNewStartingAddress = document.OuterXml.Length;
+                documentLengthBeforeNewStartingAddress = Encoding.UTF8.GetByteCount(document.OuterXml);
 
                 // Include the XISF Signature. No comment section in the padding calculation
                 newPadding = GetNewPadding(documentLengthBeforeNewStartingAddress + XisfConstants.SignatureSize, xFile.BlockAlignmentSize);
@@ -486,12 +396,10 @@ namespace XisfFileManager.Files
                 {
                     string[] locationParts = locationAttribute.Value.Split(':');
                     locationParts[1] = newStartingAddress.ToString();
-                    if (newImageSize.HasValue && locationParts.Length >= 3)
-                        locationParts[2] = newImageSize.Value.ToString();
                     locationAttribute.Value = string.Join(":", locationParts);
                 }
 
-                documentLengthAfterNewStartingAddress = document.OuterXml.Length;
+                documentLengthAfterNewStartingAddress = Encoding.UTF8.GetByteCount(document.OuterXml);
             }
             while (documentLengthAfterNewStartingAddress != documentLengthBeforeNewStartingAddress);
 
@@ -502,44 +410,6 @@ namespace XisfFileManager.Files
         // ****************************************************************************************************
         // ****************************************************************************************************
 
-        /// <summary>
-        /// Sets the <c>compression</c> and <c>checksum</c> attributes on the main <Image> element so the written
-        /// header describes the compressed block. Called before <see cref="SetImageAttachmentLocation"/> so the
-        /// location size and padding converge against the final header length.
-        /// </summary>
-        private static void ApplyCompressionAttributes(XmlDocument document, BlockCompressionInfo info)
-        {
-            XmlNamespaceManager nsManager = new XmlNamespaceManager(document.NameTable);
-            string namespaceUri = document.DocumentElement?.NamespaceURI ?? string.Empty;
-            nsManager.AddNamespace("ns", namespaceUri);
-
-            XmlNode? imageNode = document.SelectSingleNode("//ns:Image", nsManager);
-            if (imageNode?.Attributes == null)
-                return;
-
-            SetOrRemoveAttribute(document, imageNode, "compression", info.ToCompressionAttribute());
-            SetOrRemoveAttribute(document, imageNode, "checksum", info.ToChecksumAttribute());
-        }
-
-        /// <summary>Sets a node attribute to the given value, or removes it when the value is null.</summary>
-        private static void SetOrRemoveAttribute(XmlDocument document, XmlNode node, string name, string? value)
-        {
-            if (node.Attributes == null)
-                return;
-
-            if (value == null)
-            {
-                node.Attributes.RemoveNamedItem(name);
-                return;
-            }
-
-            XmlAttribute attribute = node.Attributes[name] ?? node.Attributes.Append(document.CreateAttribute(name));
-            attribute.Value = value;
-        }
-
-
-        // ****************************************************************************************************
-        // ****************************************************************************************************
 
         /// <summary>
         /// Replaces all FITS keywords in the given XML document with the keywords from the XISF file.
@@ -691,24 +561,6 @@ namespace XisfFileManager.Files
                                           .ToList()
                                           .ForEach(_ => binaryWriter.Write(zero, 0, 1));
                                 break;
-
-                            case eBufferData.POSITION:
-                                if ((int)position > buffer.ToPosition)
-                                {
-                                    string title = "WriteBinaryFile(string fileName) POSITION Error";
-                                    string message = "\n\nThe length of xml xisfString is after the start of image data:\n\n" +
-                                                     fileName + "\n\n" +
-                                                     "Current Write Position:          " + position.ToString() + "\n" +
-                                                     "Image Attachment Start Position: " + buffer.ToPosition.ToString() + "\n\nAborting.";
-
-                                    MessageBox.Show(message, title, MessageBoxButtons.OK);
-                                    throw new InvalidOperationException("POSITION Error");
-                                }
-
-                                Enumerable.Range((int)position, (int)(buffer.ToPosition - position))
-                                          .ToList()
-                                          .ForEach(_ => binaryWriter.Write(zero, 0, 1));
-                                break;
                         }
                     }
 
@@ -730,9 +582,7 @@ namespace XisfFileManager.Files
             {
                 try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { /* best-effort cleanup */ }
 
-                string title = "WriteBinaryFile() XisfFileUpdate.cs Failed";
-                string message = "\n\n" + fileName + "\n\n" + ex.Message;
-                MessageBox.Show(message, title, MessageBoxButtons.OK);
+                Log.Error($"Update {Path.GetFileName(fileName)}: Failed (binary write)", ex);
                 return false;
             }
         }

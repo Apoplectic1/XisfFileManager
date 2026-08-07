@@ -14,7 +14,7 @@ namespace XisfFileManager.Globals
     public enum eMessageMode { CLEAR, APPEND, NEW, KEEP }
 
     // In files streaming read and write operations, these define the type of data the buffer being read or written to will contain
-    public enum eBufferData { ASCII, BINARY, ZEROS, USERDATA, POSITION }
+    public enum eBufferData { ASCII, BINARY, ZEROS }
 
     // Main Form Keyword Upadate Mode
     public enum eKeywordUpdateMode { PROTECT, UPDATE_NEW, FORCE }
@@ -23,7 +23,7 @@ namespace XisfFileManager.Globals
     // Failed = write error; Protected = PROTECT mode, never written; Skipped = nothing to do
     // (UPDATE_NEW, keywords match, already compressed); Compressed = block was uncompressed and got
     // compressed; AlreadyCompressed = block copied verbatim.
-    public enum eUpdateOutcome { Failed, Protected, Skipped, Compressed, AlreadyCompressed }
+    public enum eUpdateOutcome { Failed, Protected, Skipped, Written }
 
     public enum eUiState { DISABLED, ENABLED, RENAME }
 

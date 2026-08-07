@@ -770,8 +770,7 @@ namespace XisfFileManager
 
 
             int count = 0;
-            int compressedCount = 0;
-            int verbatimCount = 0;
+            int writtenCount = 0;
             int unchangedCount = 0;
             foreach (XisfFile xFile in mFileList)
             {
@@ -830,15 +829,13 @@ namespace XisfFileManager
 
                 switch (mXisfFileUpdate.LastUpdateOutcome)
                 {
-                    case eUpdateOutcome.Compressed: compressedCount++; break;
-                    case eUpdateOutcome.AlreadyCompressed: verbatimCount++; break;
+                    case eUpdateOutcome.Written: writtenCount++; break;
                     case eUpdateOutcome.Skipped: unchangedCount++; break;
                 }
             }
 
-            int writtenCount = compressedCount + verbatimCount;
             Label_FileSelection_Statistics_OperationStatus.Text =
-                $"{writtenCount} Images Updated · {compressedCount} compressed · {verbatimCount} already-compressed" +
+                $"{writtenCount} Images Updated" +
                 (unchangedCount > 0 ? $" · {unchangedCount} unchanged" : string.Empty);
             GroupBox_FileSelection.Enabled = true;
             GroupBox_KeywordUpdateTab_SubFrameKeywords.Enabled = true;
@@ -851,9 +848,9 @@ namespace XisfFileManager
             FindFilterFrameType(); // Update UI - NOT SURE WHY I NEED THIS HERE
         }
 
-        // Shows the file currently being written (keyword update and/or compression). Forces an immediate
-        // repaint because the compress step runs synchronously on the UI thread, which would otherwise defer
-        // the label paint until after the write completes.
+        // Shows the file currently being written. Forces an immediate repaint because the write runs
+        // synchronously on the UI thread, which would otherwise defer the label paint until after it
+        // completes.
         private void ShowFileBeingWritten(string path)
         {
             Label_KeywordUpdateTab_FileName.Text = Path.GetDirectoryName(path) + "\n" + Path.GetFileName(path);

@@ -35,6 +35,10 @@
      `KeywordUpdateMode` property survive? Leaning at tabling: strict Q1, delete FORCE and the
      per-file property — one session-level Protected toggle (scope narrowed by #10: hygiene is
      exempt, so Protect means "no keyword writes") + an intent parameter on `UpdateFileAsync`.
+   - **Held for this redesign (parked 2026-08-07, `refactor-file-writers`):** an AL
+     "compose monolithic XISF (xmlText, block)" primitive that would absorb
+     `WriteBinaryFileAsync`'s buffer machinery — build it here if the redesign wants it, or
+     when a second consumer appears.
 
 9. **Mod-180 rotation fold → AL named properties (resolved 2026-08-07; execute with the next
    consumer)** — the fold becomes a *naming choice, not consumer math*: AL's orientation type
@@ -63,6 +67,15 @@
 
 ## Recently shipped
 
+- **File-writer refactor (2026-08-07, `refactor-file-writers`)** — `XisfFileUpdate` +
+  `XisfFileRename` cleanup ahead of #8: the save-time compression backstop is **removed**
+  (hygiene is compression's sole owner; save = gate → keyword rebuild → verbatim block copy →
+  atomic write; `UPDATE_NEW` skips purely on keyword match; outcomes collapse to
+  `Written`/`Skipped`/`Protected`/`Failed`), the signature's XML-length field is written as the
+  full 32-bit LE spec field in UTF-8 bytes (retires the latent <64 KiB assumption *and* the
+  char-vs-byte offset mismatch), the file layer went UI-free (MessageBox → `Log`), dead code
+  deleted (`ExtractValue`×2, `POSITION`/`USERDATA` buffer vocabulary, rename `Status`, no-op
+  path reassignment), and renames now report name-collisions honestly. Manual pass pending.
 - **Sequence numbering is index-only (2026-08-07, `sequence-by-index-only`)** — the four-mode
   Sequence Numbering groupbox (and its nested ByFilter/ByTime "Index" groupbox) is gone; renames
   always number `NNN` per filter within each directory group. The three weight modes were

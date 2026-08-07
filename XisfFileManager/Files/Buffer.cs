@@ -8,7 +8,6 @@ namespace XisfFileManager
         public string AsciiData { get; set; } = string.Empty;
         public int BinaryDataStart { get; set; }
         public int BinaryByteLength { get; set; }
-        public long ToPosition { get; set; }
         public byte[] BinaryData { get; set; } = Array.Empty<byte>();
     }
 }

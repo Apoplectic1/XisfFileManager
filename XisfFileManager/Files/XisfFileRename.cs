@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Forms;
-
+using Astronomy.Diagnostics;
 using XisfFileManager.Globals;
 using XisfFileManager.Helpers;
 
@@ -16,11 +15,15 @@ public class XisfFileRename
     public bool IncludeCalibrationFrames { get; set; }
 
     /// <summary>
-    /// Renames the specified XISF file based on its properties and the given index.
+    /// Renames the specified XISF file in place based on its properties and index.
     /// </summary>
     /// <param name="xFile">The XISF file to rename.</param>
-    /// <returns>A tuple containing the status code (1 for success, -1 for failure) and the new file name.</returns>
-    public (int Status, string FileName) RenameFile(XisfFile xFile)
+    /// <returns>
+    /// NotRenamed: true when a needed rename did not happen (target name taken by another file, or
+    /// an error — both logged); false on success or when the name was already correct.
+    /// FilePath: the file's on-disk path after the operation.
+    /// </returns>
+    public (bool NotRenamed, string FilePath) RenameFile(XisfFile xFile)
     {
         try
         {
@@ -34,18 +37,22 @@ public class XisfFileRename
 
             string newFilePath = Path.Combine(sourceFileDirectory, newFileName);
 
-            // Rename the file if its name actually changed and the new file name does not already exist
-            if (xFile.FilePath != newFilePath && !File.Exists(newFilePath))
+            if (xFile.FilePath == newFilePath)
+                return (false, newFilePath); // already named correctly
+
+            if (File.Exists(newFilePath))
             {
-                File.Move(xFile.FilePath, newFilePath);
+                Log.Warn($"Rename skipped (target exists): {Path.GetFileName(xFile.FilePath)} -> {newFileName}");
+                return (true, xFile.FilePath);
             }
 
-            return (1, newFileName);
+            File.Move(xFile.FilePath, newFilePath);
+            return (false, newFilePath);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.ToString(), "RenameFile(XisfFile xFile)");
-            return (-1, "");
+            Log.Error($"Rename failed: {Path.GetFileName(xFile.FilePath)}", ex);
+            return (true, xFile.FilePath);
         }
     }
 
@@ -190,8 +197,8 @@ public class XisfFileRename
 
     private string BuildLightFileName(int index, XisfFile file)
     {
-        string name = $"{FormatFileIndex(index)}";
-        name += $" {file.TargetName}";
+        string name = $"{index:D3}";
+        name += $"  {file.TargetName}";
         name += $"  {FormatFilterName(file)}";
         name += $"  {FormatCamera(file)}";
         name += $"  {FormatTelescope(file)}";
@@ -206,9 +213,6 @@ public class XisfFileRename
     #endregion
 
     #region Format Helpers
-
-    private static string FormatFileIndex(int index) =>
-        $"{index:D3} ";
 
     private static string FormatFilterName(XisfFile file) =>
         $"L-{file.FilterName}";

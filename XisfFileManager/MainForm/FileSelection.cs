@@ -70,7 +70,9 @@ namespace XisfFileManager
 
             SetFileIndex();
 
-            // Rename files and update UI
+            // Rename files and update UI. In-memory FilePath is deliberately left stale after a move —
+            // the rename pass ends the session (mFileList is cleared below), so the paths are never reused.
+            int notRenamed = 0;
             for (int i = 0; i < mFileList.Count; i++)
             {
                 if (mBCancel) { mBCancel = false; break; }
@@ -78,23 +80,23 @@ namespace XisfFileManager
                 var xFile = mFileList[i];
                 ProgressBar_KeywordUpdateTab_WriteProgress.Value = i + 1;
 
-                xFile.FilePath = Path.GetDirectoryName(xFile.FilePath) + "\\" + Path.GetFileName(xFile.FilePath);
-
                 Label_FileSelection_BrowseFileName.Text = Path.GetDirectoryName(xFile.FilePath) + "\n" + Path.GetFileName(xFile.FilePath);
 
-                var renameTuple = await Task.Run(() => mRenameFile.RenameFile(xFile));
+                var (skipped, newFilePath) = await Task.Run(() => mRenameFile.RenameFile(xFile));
+                if (skipped) notRenamed++;
 
-                Label_KeywordUpdateTab_FileName.Text = Path.GetDirectoryName(renameTuple.FileName) + "\n" + Path.GetFileName(renameTuple.FileName);
+                Label_KeywordUpdateTab_FileName.Text = Path.GetDirectoryName(newFilePath) + "\n" + Path.GetFileName(newFilePath);
             }
 
             // Update progress bar to maximum value
             ProgressBar_KeywordUpdateTab_WriteProgress.Value = ProgressBar_KeywordUpdateTab_WriteProgress.Maximum;
 
-            // Display completion message with number of renamed files and duplicates
-            if (duplicates == 1)
-                Label_FileSelection_Statistics_OperationStatus.Text = (mFileList.Count).ToString() + " Images Renamed\n" + duplicates.ToString() + " Duplicate";
-            else
-                Label_FileSelection_Statistics_OperationStatus.Text = (mFileList.Count).ToString() + " Images Renamed\n" + duplicates.ToString() + " Duplicates";
+            // Display completion message with renamed/duplicate counts; name collisions and errors are
+            // counted honestly (details in xfm.log)
+            Label_FileSelection_Statistics_OperationStatus.Text =
+                (mFileList.Count - notRenamed).ToString() + " Images Renamed\n"
+                + duplicates.ToString() + (duplicates == 1 ? " Duplicate" : " Duplicates")
+                + (notRenamed > 0 ? $"  {notRenamed} not renamed (see xfm.log)" : string.Empty);
 
             // Delete directory statistics files
             mDirectoryProperties.DirectoryStatistics.Clear();

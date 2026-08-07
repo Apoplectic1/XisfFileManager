@@ -61,10 +61,10 @@ XISF files contain an XML metadata header with FITS-compatible keywords, binary 
 
 XFM treats the image data block as an **opaque byte array** — nothing in the app decodes pixels
 (statistics/calculations all come from FITS keywords). Compression is **library hygiene in the
-Browse read pass** (below): any file browsed unhygienic is repaired in place. The save path still
-compresses an uncompressed block to `zstd+sh` level 19 (plain `zstd`, no shuffle, for 1-byte
-samples) with a SHA-1 checksum as a backstop; an already-compressed block (any codec — the
-existing zlib library included) is copied verbatim.
+Browse read pass** (below) and nowhere else: any file browsed unhygienic is repaired in place;
+the save path always copies the block **verbatim** (no save-time compression backstop since
+2026-08-07, `refactor-file-writers` — a hygiene-failed file saves uncompressed and the next
+browse repairs it).
 
 ### Compression (consumed from AL — `Astronomy.XISF.Compression`)
 
@@ -72,10 +72,12 @@ Since 2026-08-06 (`adopt-al-xisf-compression`) the codec comes from the sibling 
 `ProjectReference` — XFM's **first AL dependency**; the vendored `Files/Compression/` duplicate is
 deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
 
-- `XisfBlockCompression.Compress(raw, itemSize, BlockCodec.Zstd, XisfConstants.CompressionZstdLevel)`
-  — byte-shuffle → zstd level 19 → SHA-1 over the compressed bytes. Codec + level chosen by the
-  2026-08-07 library benchmark (`docs/2026-08-07-compression-benchmark.md`: −11% vs the previous
-  zlib-SmallestSize writes on lights; readers need zstd support — NINA 3.x / PI ≥ 1.8.9-2 / AL).
+- XFM's sole compression entry point is `XisfBlockRewriter.RewriteAsync(…, BlockCodec.Zstd,
+  XisfConstants.CompressionZstdLevel)` in the hygiene pass — byte-shuffle → zstd level 19 →
+  SHA-1 over the compressed bytes, via `XisfBlockCompression` inside AL. Codec + level chosen by
+  the 2026-08-07 library benchmark (`docs/2026-08-07-compression-benchmark.md`: −11% vs the
+  previous zlib-SmallestSize writes on lights; readers need zstd support — NINA 3.x /
+  PI ≥ 1.8.9-2 / AL).
   AL's layer also encodes/decodes zlib / lz4 / lz4hc (±shuffle) and all five XISF checksum
   algorithms; XFM emitted zlib(+sh) until 2026-08-07, so the existing library is predominantly
   zlib — and **stays zlib**: compressed+checksummed files are never touched (mixed codecs are the
@@ -239,11 +241,12 @@ up front (expected at `XisfConstants.AstapPath`).
 - Event-driven UI updates via delegates (e.g., `CalibrationTabPageEvent`)
 - Keyword properties on XisfFile delegate to KeywordList
 - `XisfFileUpdate.UpdateFileAsync` is **save-if-needed**: `PROTECT` never writes; `UPDATE_NEW` writes
-  when keywords changed **or** the block is uncompressed; `FORCE` always writes. It always
-  re-serializes the XML header and either compresses an uncompressed block or copies an
-  already-compressed one verbatim. `LastUpdateOutcome` reports the result for status counts
-  (`Protected` = refused by the PROTECT gate). The PROTECT guard lives inside `UpdateFileAsync`;
-  deliberate write paths (Calibration masters, FluxDensity export copies) set `FORCE` before calling.
+  when keywords changed; `FORCE` always writes. It re-serializes the XML header and always copies
+  the image block **verbatim** (compression is browse-hygiene's job — no save-time backstop).
+  `LastUpdateOutcome` reports the result for status counts (`Protected` = refused by the PROTECT
+  gate). The PROTECT guard lives inside `UpdateFileAsync`; deliberate write paths (Calibration
+  masters, FluxDensity export copies) set `FORCE` before calling. The file layer is UI-free —
+  failures report via `Log` + returned status, never MessageBox.
 
 ### Important files
 
