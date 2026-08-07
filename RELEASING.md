@@ -78,6 +78,10 @@ git push origin main vX.Y.Z
   dry-run at the same tag.
 - The app's `Velopack` NuGet package and the `vpk` CLI should stay on matching versions
   (both 1.2.0 as of 2026-08-02) — `vpk pack` warns on skew.
+- **Bare `vpk` commands: run from the repo root.** vpk reads `.\Releases\` of the *current
+  directory* with no repo/package cross-check — a wrong cwd uploads another app's payload
+  (2026-08-06: a drifted shell published TP 1.3.3 assets as XFM v2.2.1; caught and deleted in
+  a minute). `release.ps1` is immune — it pins the repo root.
 
 Latest released tag: **`v2.2.1`** (MinVer cross-repo cache fix — exe stamps XFM's version again;
 first annotated tag; adds the release-script stamp gate; app unchanged otherwise, carries AL
