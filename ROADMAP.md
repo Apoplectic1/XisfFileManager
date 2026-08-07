@@ -28,12 +28,13 @@
      block (:678), leaving the UI dead; the early return also means files 2..N are never stamped,
      so the central gate is bypassed in the UI path. Fix rides the redesign, not before.
    - **Open questions:** Q1 do deliberate feature writes respect a Protected session (strict:
-     abort loudly, rule-16 style) or override it (today's behavior)? **Q2 answered (user,
-     2026-08-07, benchmark session):** FORCE's standing meaning becomes *the recompress trigger* —
-     the one-time zstd-19 library recompress (follow-up #10) runs only under FORCE; "rewrite
-     unchanged files" otherwise leaves the UI. Q3 does the per-file `KeywordUpdateMode` property
-     survive? Leaning at tabling: strict Q1, delete the per-file property — one session-level
-     Protected toggle + an intent parameter on `UpdateFileAsync`.
+     abort loudly, rule-16 style) or override it (today's behavior)? **Q2 closed (2026-08-07,
+     twice):** first answered "FORCE = the recompress trigger," then superseded the same day —
+     compression became autonomous browse hygiene (#10), so **nothing needs "rewrite unchanged
+     files" and FORCE has no remaining justification: delete it outright.** Q3 does the per-file
+     `KeywordUpdateMode` property survive? Leaning at tabling: strict Q1, delete FORCE and the
+     per-file property — one session-level Protected toggle (scope narrowed by #10: hygiene is
+     exempt, so Protect means "no keyword writes") + an intent parameter on `UpdateFileAsync`.
 
 9. **Mod-180 rotation fold → AL named properties (resolved 2026-08-07; execute with the next
    consumer)** — the fold becomes a *naming choice, not consumer math*: AL's orientation type
@@ -50,20 +51,29 @@
      says don't spend it preemptively.
    - XFM's format-time fold→round→fold overshoot dance (`FormatRotationAngle`) stays XFM-side —
      it's 0.1° display quantization, not domain math.
-   Also pending: retire the mechanical `M` fallback (`RotatorPosition` in `RotationAngle`)
-   once the backlog is solved.
+   Mechanical `M` fallback (`RotatorPosition` in `RotationAngle`): the °(M) backlog was
+   **manually removed from the library** (user, 2026-08-07) — verify via TSM's existing ambiguity
+   report (no new tooling), then the fallback is retirable. TSM-side, °(M) is demoted to a simple
+   flag whose remedy is "run XFM" (TSM ROADMAP). Open sub-question at retirement: what the
+   filename does for an unsolved light with no fallback (no S token vs explicit marker —
+   rule-16 flavored).
 
-10. **FORCE-gated library recompress to zstd-19 (follow-on, decided 2026-08-07)** — one-time
-    pass reclaiming ~26 GB (≈10%) by recompressing the existing zlib library at `zstd+sh(19)`;
-    runs **only when FORCE is on** (per #8 Q2: FORCE = the recompress trigger). **Second payload:
-    recompression stamps a fresh SHA-1 on every rewritten block, converting no-checksum files
-    (compressed by pre-checksum producers; e.g. 90 of 184 in the first Verify-SHA field run) into
-    verifiable ones — Verify SHA coverage goes to 100% as a side effect.** Mechanics when
-    implemented: rides the normal Update save — FORCE flips `UpdateFileAsync`'s block branch from
-    "copy verbatim" to decode → recompress → fresh checksum (today FORCE re-serializes the file
-    but still copies the block verbatim; no recompress exists yet). Plan the pass when picked up —
-    after the zstd-19 new-write switch has field mileage. Numbers + method:
-    `docs/2026-08-07-compression-benchmark.md`.
+10. **Browse-time compression hygiene (supersedes the FORCE-gated recompress — explored + decided
+    2026-08-07; not yet proposed)** — compression becomes fully independent, automatic hygiene in
+    the Browse read pass: any file **uncompressed or lacking a checksum** is rewritten in place
+    (surgical — XML byte-preserved except `compression`/`checksum`/`location`; block →
+    `zstd+sh(19)` + SHA-1; temp + atomic move). **Always on, no checkbox, exempt from Protect**
+    (Protect narrows to "no keyword writes"; Browse stops being read-only — stated decision).
+    Mixed codecs are the end state — compressed+checksummed zlib is never touched; the ~26 GB
+    migration is consciously forgone and **FORCE plays no role** (it now has no remaining job —
+    see #8). Per-file order: **solve before compress**. The surgical writer is a shared primitive
+    `(source, target, codec)` — the **solver's temp-FITS dies** (compressed solve inputs become
+    surgical temp uncompressed XISF; `WriteMinimalFits`, endian/BZERO/UInt16-only code deleted).
+    Side payload: no-checksum files (90/184 in the first field run) become verifiable — Verify
+    SHA coverage → 100%. Open: parallelism (leaning simple — hygiene shouldn't recur after the
+    initial pass) and first-pass cancel/progress UX. **Next step: revisit solve-before-compress
+    with fresh eyes, then openspec proposal.** Full rationale:
+    `docs/2026-08-07-browse-compression-hygiene-explore.md`.
 
 ## Recently shipped
 
