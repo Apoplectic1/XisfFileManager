@@ -154,6 +154,10 @@ replaces NINA's planned value), `CTYPE1/2` (`RA---TAN`/`DEC--TAN`), `EQUINOX`, `
 `CRPIX1/2`, `CD1_1..CD2_2`, `CROTA1/2`. Persistence rides the normal save step; solver stamps are
 not subject to UPDATE_NEW-vs-FORCE (solved values always win — disk is truth); file-level PROTECT
 still refuses the save entirely. None of these names may enter `RemoveUnwantedKeywords`.
+The filename rotation token (`S`/`M` prefix + `FormatRotationAngle`, `XisfFile.cs`) folds to
+`[0, 180)` — PA and PA+180 are the same framing (pier side / rotator half-range) and 0/360 wrap
+jitter must land in one bucket; the fold is XFM naming policy only — `OBJCTROT` keeps the true
+0–360 angle and the CD matrix is ground truth.
 
 Mechanics (`Solver/AstapSolver.cs`): uncompressed XISF → `astap_cli -f` directly (read-only);
 compressed → AL `XisfImageReader` → minimal temp mono FITS (UInt16 only; else per-file failure).

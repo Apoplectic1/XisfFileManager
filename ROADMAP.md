@@ -24,6 +24,12 @@
 
 ## Recently shipped
 
+- **Filename rotation token folds to [0, 180) (2026-08-06)** — `FormatRotationAngle` folds mod 180
+  (fold → round to 0.1° → fold again, catching the 179.99→180.0 rounding overshoot): 0/360 solve
+  jitter (`PA=0.01` vs `359.99`) and meridian-flip frames (`PA=180.08`) now share one `S000.x`
+  bucket instead of splitting into `S000.0`/`S360.0`/`S180.1`. Naming policy only — `OBJCTROT`
+  keeps the true 0–360 solved PA, CD matrix is ground truth; deliberately XFM-side, not AL
+  (consumer grouping semantics, not WCS math).
 - **MinVer cross-repo cache fix + stamp gate (v2.2.1, 2026-08-06)** — MinVer 7's build cache keys
   on options only, not the repo, so the AL `ProjectReference`s leaked the Library's version onto
   the exe (v2.1.0–v2.2.0 shipped titled 1.5.x while Velopack's package version stayed correct —

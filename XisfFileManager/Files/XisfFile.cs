@@ -573,7 +573,12 @@ namespace XisfFileManager.Files
 
         public static string FormatRotationAngle(this double rotationAngle)
         {
-            return rotationAngle.ToString("000.0");
+            // Fold to [0, 180): PA and PA+180 are the same framing (pier side / rotator
+            // half-range), and 0/360 wrap jitter must land in one bucket. The second fold
+            // catches rounding overshoot (179.99 rounds to 180.0, which wraps to 0.0).
+            double folded = ((rotationAngle % 180.0) + 180.0) % 180.0;
+            folded = Math.Round(folded, 1) % 180.0;
+            return folded.ToString("000.0");
         }
 
         public static string FormatExposureTime(this double seconds)
