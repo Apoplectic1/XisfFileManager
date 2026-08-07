@@ -73,11 +73,13 @@
 - [x] 5.1 Warning-free `dotnet build XisfFileManager.sln -c Release` (AL graph too)
 - [x] 5.2 AL tests green (`Astronomy.XISF.Tests`: 113/113 — 10 new rewriter tests + no
       regressions in the reader/verifier/compression suites the rewriter refactor touched)
-- [ ] 5.3 Manual pass (user): browse a fresh uncompressed night → files rewritten
+- [x] 5.3 Manual pass (user): browse a fresh uncompressed night → files rewritten
       `zstd+sh(19)` + SHA-1, PixInsight opens one; a legacy no-checksum file recompressed;
       compressed+checksummed zlib file byte-identical
-- [ ] 5.4 Manual pass (user): cancel mid-pass → UI restored, re-browse repairs only the
+      *(user field-verified across several targets, confirmed 2026-08-07)*
+- [x] 5.4 Manual pass (user): cancel mid-pass → UI restored, re-browse repairs only the
       remainder; hygiene-then-keyword-save on one file yields a valid XISF
-- [ ] 5.5 Manual pass (user): solver on a compressed backlog frame (temp `.xisf`, solves, no
+      *(user confirmed covered at close-out 2026-08-07)*
+- [x] 5.5 Manual pass (user): solver on a compressed backlog frame (temp `.xisf`, solves, no
       solver files near library); fresh-night wall-clock sanity vs pool expectation (~4–6 min
-      per ~100 lights)
+      per ~100 lights) *(user field runs + harness spot-check; confirmed 2026-08-07)*
