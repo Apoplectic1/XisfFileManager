@@ -38,7 +38,7 @@
 ## 4. Verification
 
 - [x] 4.1 Warning-free `dotnet build XisfFileManager.sln -c Release`
-- [ ] 4.2 Manual pass (user): rename a browsed folder → files numbered `NNN` per filter as
+- [x] 4.2 Manual pass (user): rename a browsed folder → files numbered `NNN` per filter as
       before; Keyword Update tab shows no Weights groupbox; File Selection shows no Sequence
       Numbering groupbox; saving a file that carried `SSWEIGHT` writes it back without the
-      keyword
+      keyword *(user field-verified 2026-08-07)*
