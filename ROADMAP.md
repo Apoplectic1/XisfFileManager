@@ -13,14 +13,26 @@
 6. **Verify input checksums on read** (was #7) — XFM writes SHA-1 checksums but does not validate an existing block's checksum on load; could warn on mismatch (corruption detection).
 7. **AL adoption prep (sln membership)** — when `Astronomy.*` `ProjectReference`s land, also add those projects to `XisfFileManager.sln` with config mappings (`Debug|x64`/`Release|x64` ActiveCfg **and** Build.0; Any CPU → Any CPU; x86 rows ActiveCfg-only onto x64). TP lesson 2026-08-02: sln builds *unset* Configuration/Platform for non-member references → silent **Debug** AL DLLs in dev builds. XFM's release path is immune (project-level publish flows Configuration), and `release.ps1`'s conditional AL gate arms itself when `Astronomy.Core.dll` appears in the payload. Verify with `dotnet build XisfFileManager.sln -c Release`: every `Astronomy.* ->` line must say `x64\Release`.
 
-8. **Revisit UPDATE_NEW/FORCE/PROTECT — plan what the keyword-update modes mean (user, 2026-08-06)** —
-   properly define the three `eKeywordUpdateMode` semantics and how they interact with feature
-   writes, then align call sites. Observations that triggered it (astap-plate-solve planning):
-   PROTECT is really a **file-level refusal in the common save path** (`UpdateFileAsync`'s
-   centralized gate) and should stay independent of every feature, the solver included; the
-   solver's "solved values always win — disk is truth" decision bypasses the UPDATE_NEW-vs-FORCE
-   distinction entirely, a hint the per-keyword mode split may not be carrying its weight. Design
-   task, not a quick fix.
+8. **Revisit UPDATE_NEW/FORCE/PROTECT — plan what the keyword-update modes mean (user, 2026-08-06;
+   design session opened + re-tabled 2026-08-07)** — session findings, captured for pickup:
+   - **Nothing is per-keyword.** The mode is consulted only twice, both in `UpdateFileAsync`, both
+     deciding *whether the file writes at all*. The enum conflates two orthogonal axes:
+     **permission** (PROTECT = read-only session; global in practice — the radio value is stamped
+     onto every file at save) and **intent** (FORCE at feature call sites means "bypass PROTECT,
+     deliberate write" — the Calibration save/set/restore dance ×3 and FluxDensity's comment admit
+     it; FORCE at the UI radio means "rewrite unchanged files", an unrelated meaning).
+   - **Decided (user, 2026-08-07): compression is unconditional** — an uncompressed block always
+     writes, under every mode; it's part of "dirty", not a mode question.
+   - **Latent UI bug found:** `MainForm.cs:614` — radio-PROTECT (and the cancel path at :617)
+     `return`s out of the Update loop after the groupboxes are disabled but before the re-enable
+     block (:678), leaving the UI dead; the early return also means files 2..N are never stamped,
+     so the central gate is bypassed in the UI path. Fix rides the redesign, not before.
+   - **Open questions:** Q1 do deliberate feature writes respect a Protected session (strict:
+     abort loudly, rule-16 style) or override it (today's behavior)? Q2 does anyone need
+     "rewrite unchanged files" — note the zstd recompress-library maintenance verb (compression
+     follow-up) is exactly this; Q3 does the per-file `KeywordUpdateMode` property survive?
+     Leaning at tabling: strict Q1, drop FORCE from the UI, delete the per-file property —
+     one session-level Protected toggle + an intent parameter on `UpdateFileAsync`.
 
 9. **Mod-180 rotation fold → AL named properties (resolved 2026-08-07; execute with the next
    consumer)** — the fold becomes a *naming choice, not consumer math*: AL's orientation type
