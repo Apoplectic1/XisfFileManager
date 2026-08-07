@@ -263,7 +263,26 @@ namespace XisfFileManager
             }
 
             mFolderBrowseState = Files.DirectoryOperations.SelectedFolder;
+            GroupBox_FileSelection_Statistics.Text = TargetDisplayName(Files.DirectoryOperations.SelectedFolder);
             return true;
+        }
+
+        // Statistics groupbox title: the target-level directory being processed. Library layout is
+        // ...\Target\Captures\Camera\Filter (DOMAIN.md) — a selection at or below "Captures" resolves
+        // to the target segment above it; anything else shows the selected folder's own name.
+        private static string TargetDisplayName(string selectedFolder)
+        {
+            if (string.IsNullOrWhiteSpace(selectedFolder))
+                return "Statistics";
+
+            string[] segments = selectedFolder
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            int captures = Array.FindIndex(segments,
+                s => s.Equals("Captures", StringComparison.OrdinalIgnoreCase));
+
+            string name = captures > 0 ? segments[captures - 1] : segments[^1];
+            return string.IsNullOrEmpty(name) ? "Statistics" : name;
         }
 
         private async Task ReadHeadersAsync()
