@@ -24,6 +24,13 @@
 
 ## Recently shipped
 
+- **Checked browse skips pre-solved lights (`skip-presolved-lights`, 2026-08-06)** — a light frame
+  already carrying the full measured WCS set (11 solve-only keywords: CTYPE1/2, EQUINOX, CRVAL1/2,
+  CRPIX1/2, CD matrix; `KeywordList.HasPlateSolution`) skips the solver and stamp entirely —
+  re-browsing a processed library is header-read cheap and idempotent. Presence-based and
+  provenance-agnostic; partial sets re-solve (self-heal); no force path; status/log report
+  Solved/Skipped/failed. Spec `plate-solve-stamp` amended (was: always re-solve). Manual in-app
+  pass pending.
 - **Solver failures carry ASTAP's reason (`solver-log-tail`, 2026-08-06)** — `astap_cli` now runs
   with `-log`; on `PLTSOLVD=F` or timeout the tail of ASTAP's own log lands in the `SOLVER` diag
   channel (star counts, search progress). Motivated by the IC 2087 field run: 6/11 "no solution"

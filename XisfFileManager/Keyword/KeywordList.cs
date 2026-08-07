@@ -848,6 +848,22 @@ namespace XisfFileManager
                 AddKeyword("CROTA2", solution.Crota2, "[deg] Solved WCS image twist of Y axis (ASTAP)");
         }
 
+        /// <summary>
+        /// True when the file already carries a full measured WCS solution: all eleven keywords
+        /// <see cref="SetPlateSolution"/> stamps unconditionally, from any solver (provenance-agnostic).
+        /// CROTA1/CROTA2 are excluded (conditionally stamped); RA/DEC/OBJCTROT are excluded because
+        /// raw captures carry them as planned values. A partial set returns false so the frame
+        /// re-solves.
+        /// </summary>
+        public bool HasPlateSolution =>
+            mPlateSolutionKeywords.All(keyword => GetKeywordValue(keyword) != string.Empty);
+
+        private static readonly string[] mPlateSolutionKeywords =
+        {
+            "CTYPE1", "CTYPE2", "EQUINOX", "CRVAL1", "CRVAL2", "CRPIX1", "CRPIX2",
+            "CD1_1", "CD1_2", "CD2_1", "CD2_2",
+        };
+
         // *********************************************************************************************************
 
         public void RemoveUnwantedKeywords()

@@ -272,6 +272,7 @@ namespace XisfFileManager
             bool solverEnabled = CheckBox_Solver.Checked
                 && !CheckBox_FileSelection_DirectorySelection_Masters_Enable.Checked;
             int solvedCount = 0;
+            int skippedCount = 0;
             List<string> solveFailures = new();
             Log.Info($"Browse read start: {Files.DirectoryOperations.FileInfoList.Count} files, solver={solverEnabled}");
 
@@ -290,16 +291,23 @@ namespace XisfFileManager
 
                 if (solverEnabled && mFile.FrameType == eFrame.LIGHT)
                 {
-                    Label_FileSelection_BrowseFileName.Text = xFile.DirectoryName + "\nSolving: " + xFile.Name;
-                    Solver.SolveResult solution = await Solver.AstapSolver.SolveAsync(mFile.FilePath, mFile.IsImageCompressed);
-                    if (solution.Success)
+                    if (mFile.KeywordList.HasPlateSolution)
                     {
-                        mFile.KeywordList.SetPlateSolution(solution);
-                        solvedCount++;
+                        skippedCount++;
                     }
                     else
                     {
-                        solveFailures.Add(xFile.Name + " — " + solution.ErrorText);
+                        Label_FileSelection_BrowseFileName.Text = xFile.DirectoryName + "\nSolving: " + xFile.Name;
+                        Solver.SolveResult solution = await Solver.AstapSolver.SolveAsync(mFile.FilePath, mFile.IsImageCompressed);
+                        if (solution.Success)
+                        {
+                            mFile.KeywordList.SetPlateSolution(solution);
+                            solvedCount++;
+                        }
+                        else
+                        {
+                            solveFailures.Add(xFile.Name + " — " + solution.ErrorText);
+                        }
                     }
                 }
 
@@ -308,12 +316,13 @@ namespace XisfFileManager
 
             mFileList.Sort((a, b) => a.CaptureTime.CompareTo(b.CaptureTime)); // oldest is first
 
-            Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, failed={solveFailures.Count}");
+            Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, skipped={skippedCount}, failed={solveFailures.Count}");
 
             if (solverEnabled)
             {
                 Label_FileSelection_Statistics_OperationStatus.Text =
                     $"Read {mFileList.Count} Image Files; Solved {solvedCount}" +
+                    (skippedCount > 0 ? $", Skipped {skippedCount}" : "") +
                     (solveFailures.Count > 0 ? $", {solveFailures.Count} failed" : "");
                 if (solveFailures.Count > 0)
                 {
