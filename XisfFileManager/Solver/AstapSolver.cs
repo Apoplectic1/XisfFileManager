@@ -94,10 +94,15 @@ namespace XisfFileManager.Solver
                 Log.Diag("SOLVER", $"exit={exitCode} timedOut={timedOut}");
                 if (timedOut)
                 {
+                    LogSolverLogTail(tempBase + ".log");
                     return LogOutcome(Fail($"solver timed out after {SolveTimeoutMs / 1000} s"), name, stopwatch);
                 }
 
                 result = ParseIni(tempBase + ".ini", exitCode);
+                if (!result.Success)
+                {
+                    LogSolverLogTail(tempBase + ".log");
+                }
             }
             catch (InvalidDataException ex)
             {
@@ -132,13 +137,31 @@ namespace XisfFileManager.Solver
 
         private static SolveResult Fail(string reason) => new() { Success = false, ErrorText = reason };
 
+        /// <summary>
+        /// On failure, fold the tail of ASTAP's own log (written via <c>-log</c>) into the diagnostics
+        /// log — star-detection counts and search progress that the .ini's bare PLTSOLVD=F omits.
+        /// </summary>
+        private static void LogSolverLogTail(string logPath)
+        {
+            if (!Log.IsDiagEnabled("SOLVER") || !File.Exists(logPath)) return;
+            string[] tail = File.ReadLines(logPath)
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .TakeLast(15)
+                .ToArray();
+            if (tail.Length > 0)
+            {
+                Log.Diag("SOLVER", "astap log tail: " + string.Join(" | ", tail));
+            }
+        }
+
         private static string BuildArguments(string solveInput, string tempBase, XisfHeader header)
         {
             List<string> args = new()
             {
                 $"-f \"{solveInput}\"",
-                $"-o \"{tempBase}\"",   // .ini/.wcs land in temp, never beside a library image
+                $"-o \"{tempBase}\"",   // .ini/.wcs/.log land in temp, never beside a library image
                 "-z 0",                 // auto downsample
+                "-log",                 // ASTAP's own log carries the failure reason the .ini omits
             };
 
             if (header.RaDegrees is double ra && header.DecDegrees is double dec)

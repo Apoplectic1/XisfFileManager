@@ -24,6 +24,11 @@
 
 ## Recently shipped
 
+- **Solver failures carry ASTAP's reason (`solver-log-tail`, 2026-08-06)** — `astap_cli` now runs
+  with `-log`; on `PLTSOLVD=F` or timeout the tail of ASTAP's own log lands in the `SOLVER` diag
+  channel (star counts, search progress). Motivated by the IC 2087 field run: 6/11 "no solution"
+  failures with nothing to diagnose them by. Companion AL fix same day: legacy `sha1` checksum
+  tokens canonicalized on read (2019-era SGP files had failed 106/106 before ASTAP ever ran).
 - **Diagnostics adopted: xfm.log + Ctrl+N (`adopt-diagnostics`, 2026-08-06)** — shared
   `Astronomy.Diagnostics` (+ new `.WinForms` dialog satellite, which TP also consumes now): log
   rotation at startup, `XFM_DIAG` channels, Ctrl+N observation dialog with screenshots + context

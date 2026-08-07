@@ -97,7 +97,9 @@ diag channels, default all-Debug/none-Release), and **Ctrl+N** opens the shared 
 markers + screenshots under `Logs\screenshots\`, with `GetDiagnosticsContext()` stamping loaded-file
 count, tab, and checkbox states into the END line. Instrumented so far: the Browse read pass
 (bracket Info lines) and the solver (`Log.Info` per solve outcome/duration, `Log.Error` on failures,
-gated `Diag("SOLVER", …)` with CLI args + raw `.ini`). Convention: new error paths get a `Log.Error`
+gated `Diag("SOLVER", …)` with CLI args, raw `.ini`, and — on failure/timeout — the tail of ASTAP's
+own `-log` output, which carries the star counts and search progress `PLTSOLVD=F` omits).
+Convention: new error paths get a `Log.Error`
 twin beside any MessageBox so dialogs are never the only record.
 
 ## Keywords
