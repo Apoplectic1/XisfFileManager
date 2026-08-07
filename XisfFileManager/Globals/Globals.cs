@@ -9,7 +9,6 @@ namespace XisfFileManager.Globals
     public enum eFilter { ALL, L, R, G, B, H, O, S, SHUTTER, EMPTY }
 
     // These specify how frame numbering will occur during renumbering of the files on disk
-    public enum eOrder { WEIGHTINDEX, INDEXWEIGHT, WEIGHT, INDEX }
 
     // These control the display and clearing of the MessageBox for the results of finding and matching calibration files
     public enum eMessageMode { CLEAR, APPEND, NEW, KEEP }

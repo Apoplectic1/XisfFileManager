@@ -63,6 +63,15 @@
 
 ## Recently shipped
 
+- **Sequence numbering is index-only (2026-08-07, `sequence-by-index-only`)** — the four-mode
+  Sequence Numbering groupbox (and its nested ByFilter/ByTime "Index" groupbox) is gone; renames
+  always number `NNN` per filter within each directory group. The three weight modes were
+  vestigially *broken* (nothing populated `SSWeight` since the SubframeSelector CSV import was
+  archived — Weight-Only would have named every light `0000`). All seven legacy weight keywords
+  (`SSWEIGHT`, `NWEIGHT`, `W_SNR`, `W_FWHM`, `W_ECC`, `W_PSFSNR`, `W_PSFS`) joined
+  `RemoveUnwantedKeywords` — purged passively as files pass through keyword saves — and the
+  manual Weights-removal groupbox (including a Designer-only orphaned Calibration radio) was
+  deleted with its whole code chain (`eOrder`, `RenameOrder`, `WeightKeyword`, `SSWeight`).
 - **Browse-time compression hygiene (closes follow-up #10, 2026-08-07,
   `browse-compression-hygiene`)** — every Browse repairs unhygienic files automatically: block
   uncompressed ∨ no checksum → in-place surgical rewrite to `zstd+sh(19)` + SHA-1 (new AL

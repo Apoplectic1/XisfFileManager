@@ -63,10 +63,7 @@ namespace XisfFileManager
             mXisfFileUpdate = new XisfFileUpdate();
             mKeywordUpdateProtection = eKeywordUpdateMode.UPDATE_NEW;
             Label_FileSelection_Statistics_OperationStatus.Text = "";
-            mRenameFile = new XisfFileRename
-            {
-                RenameOrder = eOrder.INDEX
-            };
+            mRenameFile = new XisfFileRename();
 
             Label_FileSelection_Statistics_OperationStatus.Text = "No Images Selected";
             Label_FileSelection_Statistics_TempratureCoefficient.Text = "Temperature Coefficient: Not Computed";
@@ -77,8 +74,6 @@ namespace XisfFileManager
             this.Text = $"XISF File Manager {version}";
 
 
-            Utility.ToolTips.AddToolTip(RadioButton_FileSelection_Index_ByFilter, "Orders Files by Capture Time per Filter", "\"By Target\" orders each filter's files consecutively.\r\n\"By Night\" orders each filter's files consecutively by night.");
-            Utility.ToolTips.AddToolTip(RadioButton_FileSelection_Index_ByTime, "Orders Files by Capture Time", "\"By Target\" orders all files consecutively.\r\n\"By Night\" orders all files consecutively by night.");
             UpdateUI(eUiState.DISABLED);
         }
 
@@ -554,7 +549,6 @@ namespace XisfFileManager
             // First get a list of all the target names found in the source files, then find unique names and sort.
             // Place culled list in the target name combobox
             List<string> targetNameList = new();
-            List<string> weightKeywordList = new();
 
             foreach (XisfFile file in mFileList)
             {
@@ -618,38 +612,6 @@ namespace XisfFileManager
             }
 
 
-            // Now find a list of any present weight keywords (not values). Find unique Keyords, sort and populate Weight combobox
-            foreach (XisfFile file in mFileList)
-            {
-                weightKeywordList = file.WeightKeyword;
-            }
-
-            if (weightKeywordList.Count > 0)
-            {
-                weightKeywordList = weightKeywordList.Distinct().ToList();
-                weightKeywordList = weightKeywordList.OrderBy(q => q).ToList();
-
-                foreach (string item in weightKeywordList)
-                {
-                    ComboBox_KeywordUpdateTab_SubFrameKeywords_Weights_WeightKeywords.Items.Add(item);
-                }
-
-                if (weightKeywordList.Count > 1)
-                {
-                    Label_KeywordUpdateTab_SubFrameKeywords_Weights_WeightKeywords.ForeColor = Color.Red;
-                }
-                else
-                {
-                    Label_KeywordUpdateTab_SubFrameKeywords_Weights_WeightKeywords.ForeColor = Color.Black;
-                }
-
-                ComboBox_KeywordUpdateTab_SubFrameKeywords_Weights_WeightKeywords.SelectedIndex = 0;
-            }
-            else
-            {
-                ComboBox_KeywordUpdateTab_SubFrameKeywords_Weights_WeightKeywords.Items.Clear();
-                Label_KeywordUpdateTab_SubFrameKeywords_Weights_WeightKeywords.ForeColor = Color.Black;
-            }
 
 
 
@@ -918,7 +880,6 @@ namespace XisfFileManager
                     Button_FileSelection_DirectorySelection_Rename.Enabled = false;
                     CheckBox_FileSelection_DirectorySelection_CalibrationIds.Enabled = false;
                     CheckBox_FileSlection_DirectorySelection_NoStatistics.Enabled = false;
-                    GroupBox_FileSelection_SequenceNumbering.Enabled = false;
                     GroupBox_FileSelection_Statistics.Enabled = false;
                     Label_FileSelection_Statistics_OperationStatus.Text = "Operation Status: Idle";
                     Label_FileSelection_Statistics_SubFrameOverhead.Text = "SubFrame Overhead: Not Computed";
@@ -933,7 +894,6 @@ namespace XisfFileManager
                     Button_FileSelection_DirectorySelection_Rename.Enabled = true;
                     CheckBox_FileSelection_DirectorySelection_CalibrationIds.Enabled = true;
                     CheckBox_FileSlection_DirectorySelection_NoStatistics.Enabled = true;
-                    GroupBox_FileSelection_SequenceNumbering.Enabled = true;
                     GroupBox_FileSelection_Statistics.Enabled = true;
                     break;
 
@@ -944,7 +904,6 @@ namespace XisfFileManager
                     Button_FileSelection_DirectorySelection_Rename.Enabled = false;
                     CheckBox_FileSelection_DirectorySelection_CalibrationIds.Enabled = false;
                     CheckBox_FileSlection_DirectorySelection_NoStatistics.Enabled = false;
-                    GroupBox_FileSelection_SequenceNumbering.Enabled = false;
                     GroupBox_FileSelection_Statistics.Enabled = true;
                     Label_FileSelection_BrowseFileName.Text = "No Files Selected";
                     break;

@@ -722,46 +722,6 @@ namespace XisfFileManager
         }
 
         // *********************************************************************************************************
-
-        public List<string> WeightKeyword
-        {
-            get
-            {
-                List<string> wList = new List<string>();
-
-                string value = GetKeywordValue("SSWEIGHT");
-                if (value != string.Empty)
-                    wList.Add("SSWEIGHT");
-
-                value = GetKeywordValue("NWEIGHT");
-                if (value != string.Empty)
-                    wList.Add("NWEIGHT");
-
-                value = GetKeywordValue("W_SNR");
-                if (value != string.Empty)
-                    wList.Add("W_SNR");
-
-                value = GetKeywordValue("W_FWHM");
-                if (value != string.Empty)
-                    wList.Add("W_FWHM");
-
-                value = GetKeywordValue("W_ECC");
-                if (value != string.Empty)
-                    wList.Add("W_ECC");
-
-                value = GetKeywordValue("W_PSFSNR");
-                if (value != string.Empty)
-                    wList.Add("W_PSFSNR");
-
-                value = GetKeywordValue("W_PSFS");
-                if (value != string.Empty)
-                    wList.Add("W_PSFS");
-
-                return wList;
-            }
-        }
-
-        // *********************************************************************************************************
         // *********************************************************************************************************
 
         public void SetMasterFrameKeywords()
@@ -885,6 +845,7 @@ namespace XisfFileManager
             RemoveKeyword("NOISEH00");
             RemoveKeyword("NOISEL00");
             RemoveKeyword("NUM-FRMS");
+            RemoveKeyword("NWEIGHT");
             RemoveKeyword("OBJCTDEC");
             RemoveKeyword("OBJCTRA");
             RemoveKeyword("OBSGEO-B");
@@ -908,9 +869,15 @@ namespace XisfFileManager
             RemoveKeyword("RESOUNIT");
             RemoveKeyword("RJCT-ALG");
             RemoveKeyword("Rejection");
+            RemoveKeyword("SSWEIGHT");
             RemoveKeyword("STRKEYWD");
             RemoveKeyword("TOTALFRA");
             RemoveKeyword("TOTALFRAMES");
+            RemoveKeyword("W_ECC");
+            RemoveKeyword("W_FWHM");
+            RemoveKeyword("W_PSFS");
+            RemoveKeyword("W_PSFSNR");
+            RemoveKeyword("W_SNR");
             RemoveKeyword("XBAYROFF");
             RemoveKeyword("XORGSUBF");
             RemoveKeyword("YBAYROFF");

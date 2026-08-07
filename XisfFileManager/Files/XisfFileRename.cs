@@ -13,7 +13,6 @@ public class XisfFileRename
 {
     private const double NoTemperature = -273.0;
 
-    public eOrder RenameOrder { get; set; }
     public bool IncludeCalibrationFrames { get; set; }
 
     /// <summary>
@@ -191,7 +190,7 @@ public class XisfFileRename
 
     private string BuildLightFileName(int index, XisfFile file)
     {
-        string name = $"{FormatFileIndex(index, file)}";
+        string name = $"{FormatFileIndex(index)}";
         name += $" {file.TargetName}";
         name += $"  {FormatFilterName(file)}";
         name += $"  {FormatCamera(file)}";
@@ -208,20 +207,8 @@ public class XisfFileRename
 
     #region Format Helpers
 
-    private string FormatFileIndex(int index, XisfFile file)
-    {
-        return RenameOrder switch
-        {
-            eOrder.INDEX => $"{index:D3} ",
-            eOrder.WEIGHT => !double.IsNaN(file.SSWeight)
-                ? $"{Convert.ToInt32(file.SSWeight * 1000.0):D4}"
-                : $"{index:D3}",
-            eOrder.INDEXWEIGHT or eOrder.WEIGHTINDEX => !double.IsNaN(file.SSWeight)
-                ? $"{Convert.ToInt32(file.SSWeight * 1000.0):D4} {index:D3}"
-                : $"{index:D3}",
-            _ => $"{index:D3} "
-        };
-    }
+    private static string FormatFileIndex(int index) =>
+        $"{index:D3} ";
 
     private static string FormatFilterName(XisfFile file) =>
         $"L-{file.FilterName}";

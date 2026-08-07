@@ -213,7 +213,6 @@ up front (expected at `XisfConstants.AstapPath`).
 
 - `eFrame`: LIGHT, DARK, FLAT, BIAS, ALL, EMPTY
 - `eFilter`: L, R, G, B, H, O, S, SHUTTER, ALL, EMPTY
-- `eOrder`: File ordering (INDEX, WEIGHT, WEIGHTINDEX, INDEXWEIGHT)
 - `eKeywordUpdateMode`: PROTECT, UPDATE_NEW, FORCE
 - `eUpdateOutcome`: result reporting for `XisfFileUpdate.LastUpdateOutcome`
 - `eMessageMode`, `eBufferData`, `eUiState`: messaging/buffer/UI state

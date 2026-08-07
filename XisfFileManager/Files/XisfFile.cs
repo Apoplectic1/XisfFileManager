@@ -357,7 +357,6 @@ namespace XisfFileManager.Files
             get => KeywordList.SensorTemperature;
             set => KeywordList.SensorTemperature = value;
         }
-        public double SSWeight { get; set; }
         public int ThumbnailAttachmentPadding { get; set; }
         public int ThumbnailAttachmentLength { get; set; }
         public int ThumbnailAttachmentStart { get; set; }
@@ -412,11 +411,6 @@ namespace XisfFileManager.Files
             get => KeywordList.MSTRFRMS;
             set => KeywordList.MSTRFRMS = value;
         }
-        public List<string> WeightKeyword
-        {
-            get { return KeywordList.WeightKeyword; }
-        }
-
         // ***********************************************************************************************************************************
 
         // Access these properties from anything that instances the XifsFile class
