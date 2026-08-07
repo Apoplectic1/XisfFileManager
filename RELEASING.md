@@ -18,10 +18,13 @@ pre-policy branches pruned 2026-08-02 — their history remains on local branche
   push both:
   ```bash
   git checkout main && git merge --ff-only dev
-  git tag vX.Y.Z
+  git tag -a vX.Y.Z -m "one-line release summary"
   git push origin main vX.Y.Z
   git checkout dev
   ```
+  Tags are **annotated** (`-a -m`, adopted 2026-08-06 with v2.2.1) so the summary shows in
+  `git tag -n` and GUI clients; v2.0.0–v2.2.0 are lightweight (bare pointers) — cosmetic only,
+  MinVer and the release script treat both alike.
 - Publish at natural completion points (a shipped unit of work, docs riding the same commit) —
   not on a schedule, and never mid-change. The working tree must be clean and the build
   warning-free at the published commit (see `VERIFICATION.md`). No tag → no push: the tag is
@@ -51,7 +54,7 @@ One-time setup: `dotnet tool install -g vpk`, and `$env:GITHUB_TOKEN` = a PAT wi
 Per-release flow:
 ```powershell
 # on main, at the published commit (see Branch policy)
-git tag vX.Y.Z
+git tag -a vX.Y.Z -m "one-line release summary"
 git push origin main vX.Y.Z
 .\scripts\release.ps1          # publish → vpk pack → upload to GitHub Releases
 ```
@@ -59,6 +62,13 @@ git push origin main vX.Y.Z
   TSM) — the same tag gates the `main` push, names the GitHub Release, stamps the assembly,
   and shows in the window title (`XISF File Manager X.Y.Z`). No version files; untagged
   commits shape as `-alpha` prereleases.
+- **MinVer stamp gate (2026-08-06):** MinVer 7's build cache keys on the option list only, not
+  the repo — with the AL `ProjectReference`s in the graph, identical options let the Library's
+  version leak onto `XisfFileManager.exe` (v2.1.0–v2.2.0 shipped stamping AL's 1.5.x; the
+  title bar read it, while Velopack's package version — from `vpk -v` — stayed correct, so
+  updates applied but the title never moved). Fix: the csproj sets an explicit
+  `<MinVerVerbosity>` to give this project a unique cache key; `release.ps1` aborts if the
+  published exe's `ProductVersion` ≠ the tag version, so a stamp regression can't ship.
 - **The installed app self-updates**: startup check of this repo's Releases via Velopack
   (`MainForm.CheckForUpdatesAsync`); a published release propagates to installed copies on
   their next launch.
@@ -69,9 +79,11 @@ git push origin main vX.Y.Z
 - The app's `Velopack` NuGet package and the `vpk` CLI should stay on matching versions
   (both 1.2.0 as of 2026-08-02) — `vpk pack` warns on skew.
 
-Latest released tag: **`v2.2.0`** (checked browse skips pre-solved lights — full 11-keyword WCS
+Latest released tag: **`v2.2.1`** (MinVer cross-repo cache fix — exe stamps XFM's version again;
+first annotated tag; adds the release-script stamp gate; app unchanged otherwise, carries AL
+`1.5.1`). Prior: `v2.2.0` (checked browse skips pre-solved lights — full 11-keyword WCS
 set present ⇒ no solver run, re-browse is idempotent; solver checkbox now default-on; carries AL
-`1.5.1` unchanged). Prior: `v2.1.1` (solver diagnosability: `astap_cli -log` + failure-tail capture
+`1.5.1` unchanged); `v2.1.1` (solver diagnosability: `astap_cli -log` + failure-tail capture
 in the `SOLVER` diag channel; AL `1.5.1` — legacy `sha1` checksum tokens accepted on read,
 unblocking solves on 2019-era SGP files); `v2.1.0` (ASTAP plate solving in the read pass +
 shared diagnostics adoption; first release carrying AL DLLs — `Astronomy.XISF`/`Core`/`Diagnostics`(+`.WinForms`)

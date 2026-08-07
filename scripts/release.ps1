@@ -40,6 +40,15 @@ try {
     $publish = Join-Path $repoRoot 'publish'
     if (-not (Test-Path (Join-Path $publish 'XisfFileManager.exe'))) { throw "Publish output not found at $publish" }
 
+    # MinVer stamp gate (2026-08-06): MinVer 7's build cache keys on options only, not the repo,
+    # so the AL ProjectReferences can leak the Library's version onto the exe (v2.1.0-v2.2.0
+    # shipped stamping 1.5.x; title bar read it). The csproj's MinVerVerbosity key-split fixes
+    # it; this gate makes the failure unshippable.
+    $exeVer = (Get-Item (Join-Path $publish 'XisfFileManager.exe')).VersionInfo.ProductVersion
+    if (($exeVer -split '\+')[0] -ne $version) {
+        throw "Published XisfFileManager.exe stamps '$exeVer' - expected '$version' from tag $tag (MinVer stamp mismatch; see RELEASING.md)."
+    }
+
     # AL coordination gate (see RELEASING.md): arms on any Astronomy.* DLL in the payload.
     # ARMED 2026-08-06 by the Astronomy.XISF adoption (adopt-al-xisf-compression).
     $alDlls = @(Get-ChildItem $publish -Filter 'Astronomy.*.dll')

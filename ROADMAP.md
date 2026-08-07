@@ -24,6 +24,12 @@
 
 ## Recently shipped
 
+- **MinVer cross-repo cache fix + stamp gate (v2.2.1, 2026-08-06)** — MinVer 7's build cache keys
+  on options only, not the repo, so the AL `ProjectReference`s leaked the Library's version onto
+  the exe (v2.1.0–v2.2.0 shipped titled 1.5.x while Velopack's package version stayed correct —
+  updates applied, title never moved). Fix: explicit `<MinVerVerbosity>` in the csproj splits the
+  cache key; `release.ps1` now aborts on exe-stamp ≠ tag. Release tags are annotated from v2.2.1
+  on. Same latent bug patched in TSM/TP; upstream (adamralph/minver) affects 6.1.0–8.0.0-rc.1.
 - **Checked browse skips pre-solved lights (`skip-presolved-lights`, 2026-08-06)** — a light frame
   already carrying the full measured WCS set (11 solve-only keywords: CTYPE1/2, EQUINOX, CRVAL1/2,
   CRPIX1/2, CD matrix; `KeywordList.HasPlateSolution`) skips the solver and stamp entirely —
