@@ -42,6 +42,10 @@
 
 ## Recently shipped
 
+- **Released `v2.3.0` (2026-08-07)** — ships the filename rotation fold below; carries AL `1.5.2`
+  (docs-only AL publish — clean-stamp coordination). Follow-up #9 resolved the same day: the fold
+  becomes AL named properties (`FramingAngleDegrees` beside `PositionAngleDegrees`), mirrored in
+  AL + TSM ROADMAPs; built when TSM's `°(M)` rescan work lands.
 - **Filename rotation token folds to [0, 180) (2026-08-06)** — `FormatRotationAngle` folds mod 180
   (fold → round to 0.1° → fold again, catching the 179.99→180.0 rounding overshoot): 0/360 solve
   jitter (`PA=0.01` vs `359.99`) and meridian-flip frames (`PA=180.08`) now share one `S000.x`

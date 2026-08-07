@@ -83,9 +83,11 @@ git push origin main vX.Y.Z
   (2026-08-06: a drifted shell published TP 1.3.3 assets as XFM v2.2.1; caught and deleted in
   a minute). `release.ps1` is immune — it pins the repo root.
 
-Latest released tag: **`v2.2.1`** (MinVer cross-repo cache fix — exe stamps XFM's version again;
-first annotated tag; adds the release-script stamp gate; app unchanged otherwise, carries AL
-`1.5.1`). Prior: `v2.2.0` (checked browse skips pre-solved lights — full 11-keyword WCS
+Latest released tag: **`v2.3.0`** (filename rotation token folds to [0,180) — 0/360 solve jitter
+and meridian-flip frames share one `S000.x` bucket; naming policy only, `OBJCTROT` keeps the true
+0–360 PA; carries AL `1.5.2`, a docs-only AL publish). Prior: `v2.2.1` (MinVer cross-repo cache
+fix — exe stamps XFM's version again; first annotated tag; adds the release-script stamp gate;
+app unchanged otherwise, carries AL `1.5.1`); `v2.2.0` (checked browse skips pre-solved lights — full 11-keyword WCS
 set present ⇒ no solver run, re-browse is idempotent; solver checkbox now default-on; carries AL
 `1.5.1` unchanged); `v2.1.1` (solver diagnosability: `astap_cli -log` + failure-tail capture
 in the `SOLVER` diag channel; AL `1.5.1` — legacy `sha1` checksum tokens accepted on read,
