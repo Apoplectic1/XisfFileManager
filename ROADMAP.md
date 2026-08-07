@@ -10,7 +10,13 @@
 3. **Focal-ratio consistency coloring** — if a FOCRATIO readout is added to the Telescope groupbox, mirror the focal-length consistency check in `TelescopeService`/`TelescopeAnalysis` (distinct-ratio detection + red/black label color).
 4. **Wire `XisfBlockCompression.Decompress` into a runtime path** (was #5) — the codec is compress-only today because XFM treats image blocks as opaque. Needed when the flux feature gains real pixel read/write; at that point re-evaluate `Astronomy.PCL` for true image decode/encode (the codec here only covers the byte-block layer).
 5. **Preserve (then compress) thumbnail/ICC blocks** (was #6) — saves currently strip them unconditionally: `RemoveUnwantedAttachments` deletes Thumbnail/ICCProfile/DisplayFunction elements and non-main attachments are ignored when building the output (XisfFileUpdate.cs:304,368-382). The plan needs a preserve/copy step before compression is even on the table.
-6. **Verify input checksums on read** (was #7) — XFM writes SHA-1 checksums but does not validate an existing block's checksum on load; could warn on mismatch (corruption detection).
+6. **Verify input checksums on read** (was #7; **design set 2026-08-07** — wire the user-added
+   `CheckBox_VerifySha`, Directory Selection, solver pattern): checked browse reads each stored
+   block, recomputes the declared digest, reports Verified / Failed / No-checksum (status line +
+   per-failure log + failures dialog; **report-don't-abort** — detection is the feature, one
+   corrupt file must not kill the browse). All frame types; default unchecked (full-file I/O,
+   ~50 ms/file). Mechanism: new **verify-only AL entry** in `Astronomy.XISF` (locate block →
+   hash stored bytes → compare; no decompress) — consumer-neutral, TSM-reusable; XFM wires counts.
 7. **AL adoption prep (sln membership)** — when `Astronomy.*` `ProjectReference`s land, also add those projects to `XisfFileManager.sln` with config mappings (`Debug|x64`/`Release|x64` ActiveCfg **and** Build.0; Any CPU → Any CPU; x86 rows ActiveCfg-only onto x64). TP lesson 2026-08-02: sln builds *unset* Configuration/Platform for non-member references → silent **Debug** AL DLLs in dev builds. XFM's release path is immune (project-level publish flows Configuration), and `release.ps1`'s conditional AL gate arms itself when `Astronomy.Core.dll` appears in the payload. Verify with `dotnet build XisfFileManager.sln -c Release`: every `Astronomy.* ->` line must say `x64\Release`.
 
 8. **Revisit UPDATE_NEW/FORCE/PROTECT — plan what the keyword-update modes mean (user, 2026-08-06;
@@ -28,11 +34,12 @@
      block (:678), leaving the UI dead; the early return also means files 2..N are never stamped,
      so the central gate is bypassed in the UI path. Fix rides the redesign, not before.
    - **Open questions:** Q1 do deliberate feature writes respect a Protected session (strict:
-     abort loudly, rule-16 style) or override it (today's behavior)? Q2 does anyone need
-     "rewrite unchanged files" — note the zstd recompress-library maintenance verb (compression
-     follow-up) is exactly this; Q3 does the per-file `KeywordUpdateMode` property survive?
-     Leaning at tabling: strict Q1, drop FORCE from the UI, delete the per-file property —
-     one session-level Protected toggle + an intent parameter on `UpdateFileAsync`.
+     abort loudly, rule-16 style) or override it (today's behavior)? **Q2 answered (user,
+     2026-08-07, benchmark session):** FORCE's standing meaning becomes *the recompress trigger* —
+     the one-time zstd-19 library recompress (follow-up #10) runs only under FORCE; "rewrite
+     unchanged files" otherwise leaves the UI. Q3 does the per-file `KeywordUpdateMode` property
+     survive? Leaning at tabling: strict Q1, delete the per-file property — one session-level
+     Protected toggle + an intent parameter on `UpdateFileAsync`.
 
 9. **Mod-180 rotation fold → AL named properties (resolved 2026-08-07; execute with the next
    consumer)** — the fold becomes a *naming choice, not consumer math*: AL's orientation type
@@ -51,6 +58,12 @@
      it's 0.1° display quantization, not domain math.
    Also pending: retire the mechanical `M` fallback (`RotatorPosition` in `RotationAngle`)
    once the backlog is solved.
+
+10. **FORCE-gated library recompress to zstd-19 (follow-on, decided 2026-08-07)** — one-time
+    pass reclaiming ~26 GB (≈10%) by recompressing the existing zlib library at `zstd+sh(19)`;
+    runs **only when FORCE is on** (per #8 Q2: FORCE = the recompress trigger). Plan the pass
+    when picked up — after the zstd-19 new-write switch has field mileage. Numbers + method:
+    `docs/2026-08-07-compression-benchmark.md`.
 
 ## Recently shipped
 
