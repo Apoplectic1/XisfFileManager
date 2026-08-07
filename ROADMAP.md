@@ -22,6 +22,16 @@
    distinction entirely, a hint the per-keyword mode split may not be carrying its weight. Design
    task, not a quick fix.
 
+9. **Where does the mod-180 rotation fold live? (tabled 2026-08-06)** — today the fold is
+   format-time only (`FormatRotationAngle`); `OBJCTROT` on disk is stamped un-folded 0–360. When
+   TSM rescan starts reading `OBJCTROT` for framings (the `°(M)` backlog batch), the PA ≡ PA+180
+   rule becomes a two-consumer domain fact. Options discussed: fold at the stamp
+   (`SetPlateSolution`, disk becomes canonical [0,180) — leading candidate), AL `FoldTo180`
+   helper, or defer. Also pending: retire the mechanical `M` fallback (`RotatorPosition` in
+   `RotationAngle`) once the backlog is solved. Tangentially tied to #8 — folding at the stamp
+   re-opens what "solved values always win" means for already-stamped (skip-presolved) frames,
+   so settle the stamp semantics alongside the mode-split design.
+
 ## Recently shipped
 
 - **Filename rotation token folds to [0, 180) (2026-08-06)** — `FormatRotationAngle` folds mod 180
