@@ -22,19 +22,21 @@
    distinction entirely, a hint the per-keyword mode split may not be carrying its weight. Design
    task, not a quick fix.
 
-9. **Where does the mod-180 rotation fold live? (tabled 2026-08-06; reframed 2026-08-07)** —
-   today the fold is format-time only (`FormatRotationAngle`); `OBJCTROT` on disk is stamped
-   un-folded 0–360. When TSM rescan starts reading `OBJCTROT` for framings (the `°(M)` backlog
-   batch), the PA ≡ PA+180 rule becomes a two-consumer domain fact. The real question isn't
-   "XFM or AL" — it's **normalize at the writer vs. share the fold at the readers**:
-   - **Fold at the stamp** (`SetPlateSolution`; disk becomes canonical [0,180)) — one writer
-     normalizes, consumers stay dumb. Cleaner end-state, but changes the on-disk contract and
-     re-opens what "solved values always win" means for already-stamped (skip-presolved)
-     frames — settle alongside the #8 mode-split design.
-   - **AL `FoldTo180` helper** (disk keeps true 0–360; each consumer folds at use) — smaller,
-     reversible, available without touching #8. Mechanism in AL, policy (when to fold) stays
-     consumer-side; the shared payload is the subtle fold→round→fold rounding-overshoot dance
-     TSM would otherwise re-derive naively.
+9. **Mod-180 rotation fold → AL named properties (resolved 2026-08-07; execute with the next
+   consumer)** — the fold becomes a *naming choice, not consumer math*: AL's orientation type
+   exposes `PositionAngle` (true 0–360) and `FramingAngle` (folded [0,180)) side by side, so a
+   consumer picks a value whose name states its semantics instead of remembering to fold.
+   `OBJCTROT` on disk stays true 0–360 (FITS convention; third-party readers expect a real PA;
+   flip side stays recoverable — CD matrix is ground truth regardless). Fold-at-stamp rejected:
+   destroys nothing internally but hands outsiders a framing angle labeled as a PA.
+   Decisions riding on this:
+   - **Requirement on the `°(M)` TSM rescan work:** TSM reads orientation through the AL type,
+     not raw `OBJCTROT` — the named-property protection only covers AL-path consumers.
+   - **Held in reserve:** a companion folded keyword beside `OBJCTROT` (named choice at the
+     disk layer) if a raw-keyword consumer ever must be protected; nonstandard-keyword cost
+     says don't spend it preemptively.
+   - XFM's format-time fold→round→fold overshoot dance (`FormatRotationAngle`) stays XFM-side —
+     it's 0.1° display quantization, not domain math.
    Also pending: retire the mechanical `M` fallback (`RotatorPosition` in `RotationAngle`)
    once the backlog is solved.
 
