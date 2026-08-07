@@ -5,6 +5,21 @@
 > records (investigations, decisions, reviews) go to `docs/YYYY-MM-DD-<slug>.md` instead; findings
 > that harden into standing truth graduate to `ARCHITECTURE.md` / `DOMAIN.md`.
 
+## 2026-08-07 — astap_cli.exe cannot read XISF at all; only astap.exe can
+
+Found during the browse-compression-hygiene apply spot-check: `astap_cli.exe`'s image loader
+dispatches purely on extension — FITS/TIFF/PNM/PNG — and `.xisf` falls straight to failure
+("Error reading image file"; `command-line_version/unit_command_line_general.pas` `load_image`,
+confirmed empirically against both a surgical temp uncompressed XISF and the uncompressed
+TestData file). The uncompressed-XISF reader (`unit_xisf.pas`) is compiled **only into the GUI
+binary `astap.exe`**, which accepts the same headless switches/errorlevels — how NINA drives it.
+Consequences: (a) the solve feature's in-place uncompressed path shipped 2026-08-06 had *never*
+worked — it just never ran, because every library file is compressed and went temp-FITS; (b) XFM
+now drives `astap.exe` (`XisfConstants.AstapPath`); (c) `astap.exe` solved a surgically
+uncompressed library light (PLTSOLVD=T, CRVAL ≈ header hints) — leading XML comment and
+`<Metadata>` are tolerated (its parser string-searches the header), so the surgical temp needs
+no header stripping.
+
 ## 2026-08-07 — block-codec benchmark: zstd only wins at level ≥ 15, then it's real
 
 Benchmarked candidate XISF block codecs over the real library (42 stratified files, 2.5 GB raw —

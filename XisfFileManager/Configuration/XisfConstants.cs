@@ -16,8 +16,12 @@ namespace XisfFileManager.Configuration
         // Checksum written alongside compression, computed over the stored (compressed) bytes.
         public const string ChecksumAlgorithm = "sha-1";
 
-        // Local ASTAP plate-solver CLI (astap-plate-solve, 2026-08-06). Constant, not a setting:
+        // Local ASTAP plate solver (astap-plate-solve, 2026-08-06). The GUI binary astap.exe, driven
+        // headless (NINA's pattern) - NOT astap_cli.exe, whose loader has no XISF support at all
+        // (its extension dispatch handles FITS/TIFF/PNM/PNG only; .xisf fails as "Error reading image
+        // file"; verified against unit_command_line_general.pas + empirically 2026-08-07). Only
+        // astap.exe carries unit_xisf.pas (uncompressed-XISF reader). Constant, not a setting:
         // promote to Properties.Settings only if a second machine ever needs a different path.
-        public const string AstapCliPath = @"C:\Program Files\astap\astap_cli.exe";
+        public const string AstapPath = @"C:\Program Files\astap\astap.exe";
     }
 }

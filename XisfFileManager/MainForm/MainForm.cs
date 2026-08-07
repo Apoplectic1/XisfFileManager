@@ -2,6 +2,8 @@
 using System.Reflection;
 using Astronomy.Diagnostics;
 using Astronomy.Diagnostics.WinForms;
+using Astronomy.XISF;
+using Astronomy.XISF.Compression;
 using Velopack;
 using Velopack.Sources;
 using XisfFileManager.Calculations;
@@ -42,6 +44,10 @@ namespace XisfFileManager
         // Verify-SHA summary from the last browse (null when the checkbox was unchecked) — shown in the
         // Statistics groupbox by PopulateUiFromFiles, which repaints OperationStatus after the read pass.
         private string? mVerifyShaSummary;
+
+        // Hygiene summary from the last browse (null when nothing needed rewriting) — same repaint
+        // mechanism as mVerifyShaSummary.
+        private string? mHygieneSummary;
         private eUiState mUiState;
 
         // ##########################################################################################################################
@@ -177,9 +183,9 @@ namespace XisfFileManager
             // Solver checked but ASTAP absent: refuse the browse up front (fail fast), never skip silently.
             if (CheckBox_Solver.Checked && !Solver.AstapSolver.IsInstalled)
             {
-                Log.Error("Browse refused: Solver checked but ASTAP not found at " + XisfConstants.AstapCliPath);
+                Log.Error("Browse refused: Solver checked but ASTAP not found at " + XisfConstants.AstapPath);
                 MessageBox.Show(
-                    "ASTAP solver not found at:\n\n" + XisfConstants.AstapCliPath +
+                    "ASTAP solver not found at:\n\n" + XisfConstants.AstapPath +
                     "\n\nInstall ASTAP (with a star database) or uncheck Solver.",
                     "Plate Solver Not Found");
                 UpdateUI(eUiState.DISABLED);
@@ -286,10 +292,77 @@ namespace XisfFileManager
             int noChecksumCount = 0;
             List<string> verifyFailures = new();
 
-            Log.Info($"Browse read start: {Files.DirectoryOperations.FileInfoList.Count} files, solver={solverEnabled}, verifySha={verifyEnabled}");
+            // Compression hygiene rides the read pass (browse-compression-hygiene): any file whose block
+            // is uncompressed or lacks a checksum is rewritten in place as zstd+sh(19) + SHA-1 via the
+            // AL surgical rewriter. Always on, all frame types, exempt from PROTECT (no keyword writes).
+            // Rewrites run on a bounded pool off the UI thread; the browse never completes while one is
+            // in flight (barrier below). Cancel abandons queued rewrites; in-flight ones finish (atomic).
+            int hygieneDegree = Math.Min(6, Math.Max(2, Environment.ProcessorCount - 2));
+            using SemaphoreSlim hygieneGate = new(hygieneDegree, hygieneDegree);
+            List<Task> hygieneTasks = new();
+            int hygieneRewritten = 0;
+            int hygieneDone = 0;
+            bool hygieneCanceled = false;
+            List<string> hygieneFailures = new();
+            bool browseCanceled = false;
+
+            // Runs per unhygienic file. Everything outside the Task.Run executes on the UI context
+            // (counters, labels, XisfFile mutation), so no locking is needed; only the rewrite itself
+            // is off-thread.
+            async Task HygieneAsync(XisfFile file)
+            {
+                string name = Path.GetFileName(file.FilePath);
+                await hygieneGate.WaitAsync();
+                try
+                {
+                    if (hygieneCanceled)
+                        return; // queued job abandoned by cancel; next browse picks the file up again
+
+                    Label_FileSelection_BrowseFileName.Text =
+                        Path.GetDirectoryName(file.FilePath) + "\nCompressing: " + name;
+                    Log.Diag("HYGIENE",
+                        $"start {name} compressed={file.IsImageCompressed} checksum={file.Compression.HasChecksum}");
+
+                    XisfBlockRewriteResult rewrite = await Task.Run(() => XisfBlockRewriter.RewriteAsync(
+                        file.FilePath, file.FilePath, BlockCodec.Zstd, XisfConstants.CompressionZstdLevel));
+
+                    // Refresh the in-memory geometry — a later save's verbatim block copy reads these.
+                    file.TargetAttachmentStart = (int)rewrite.AttachmentOffset;
+                    file.TargetAttachmentLength = (int)rewrite.AttachmentSize;
+                    file.Compression = rewrite.Compression;
+                    file.ItemSize = rewrite.Compression.ItemSize;
+
+                    hygieneRewritten++;
+                    Log.Info($"Hygiene {name}: {rewrite.Compression.CodecName} "
+                        + $"{rewrite.AttachmentSize:N0} bytes + {XisfConstants.ChecksumAlgorithm}");
+                }
+                catch (Exception ex)
+                {
+                    // Per-file failure (locked file, I/O error, unresolvable geometry): original is
+                    // untouched (temp + atomic replace), report and keep browsing.
+                    hygieneFailures.Add(name + " — " + ex.Message);
+                    Log.Error($"Hygiene failed: {name} — {ex.Message}", ex);
+                }
+                finally
+                {
+                    hygieneDone++;
+                    hygieneGate.Release();
+                }
+            }
+
+            Log.Info($"Browse read start: {Files.DirectoryOperations.FileInfoList.Count} files, solver={solverEnabled}, verifySha={verifyEnabled}, hygienePool={hygieneDegree}");
 
             foreach (FileInfo xFile in Files.DirectoryOperations.FileInfoList)
             {
+                if (mBCancel)
+                {
+                    mBCancel = false;
+                    browseCanceled = true;
+                    hygieneCanceled = true; // queued rewrites abandon; in-flight ones finish below
+                    Log.Info("Browse canceled by user — keeping files read so far");
+                    break;
+                }
+
                 Label_FileSelection_BrowseFileName.Text = xFile.DirectoryName + "\n" + xFile.Name;
                 ProgressBar_FileSelection_ReadProgress.Value += 1;
 
@@ -352,47 +425,94 @@ namespace XisfFileManager
                     }
                 }
 
+                // Hygiene enqueues strictly after this file's solve (never compress a file out from
+                // under an in-place solve); the pool then runs it alongside later files' front halves.
+                if (!mFile.IsImageCompressed || !mFile.Compression.HasChecksum)
+                {
+                    hygieneTasks.Add(HygieneAsync(mFile));
+                }
+
                 mFileList.Add(mFile);
+            }
+
+            // Barrier: the browse does not complete (and the UI is not re-enabled) until every issued
+            // hygiene rewrite has finished or been abandoned. The wait loop keeps pumping the UI
+            // context so progress ticks and a late cancel click still register.
+            if (hygieneTasks.Count > 0)
+            {
+                ProgressBar_FileSelection_ReadProgress.Maximum = hygieneTasks.Count;
+                Task allHygiene = Task.WhenAll(hygieneTasks);
+                while (!allHygiene.IsCompleted)
+                {
+                    if (mBCancel)
+                    {
+                        mBCancel = false;
+                        hygieneCanceled = true;
+                        Log.Info("Hygiene canceled by user — in-flight rewrites will finish, queued ones abandoned");
+                    }
+                    ProgressBar_FileSelection_ReadProgress.Value = Math.Min(hygieneDone, hygieneTasks.Count);
+                    Label_FileSelection_Statistics_OperationStatus.Text =
+                        $"Compressing {hygieneDone}/{hygieneTasks.Count} (zstd+sh {XisfConstants.CompressionZstdLevel})…";
+                    await Task.WhenAny(allHygiene, Task.Delay(250));
+                }
+                ProgressBar_FileSelection_ReadProgress.Value = ProgressBar_FileSelection_ReadProgress.Maximum;
+                await allHygiene; // exceptions are handled per file inside HygieneAsync
             }
 
             mFileList.Sort((a, b) => a.CaptureTime.CompareTo(b.CaptureTime)); // oldest is first
 
-            Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, skipped={skippedCount}, failed={solveFailures.Count}, "
-                   + $"verified={verifiedCount}, noChecksum={noChecksumCount}, verifyFailed={verifyFailures.Count}");
+            Log.Info($"Browse read done: {mFileList.Count} files{(browseCanceled ? " (canceled)" : "")}, solved={solvedCount}, skipped={skippedCount}, failed={solveFailures.Count}, "
+                   + $"verified={verifiedCount}, noChecksum={noChecksumCount}, verifyFailed={verifyFailures.Count}, "
+                   + $"hygieneRewritten={hygieneRewritten}, hygieneFailed={hygieneFailures.Count}");
 
             mVerifyShaSummary = verifyEnabled
                 ? $"{verifiedCount} SHA Verified {noChecksumCount} No Checksum {verifyFailures.Count} Failed"
                 : null;
 
-            if (solverEnabled || verifyEnabled)
+            mHygieneSummary = hygieneTasks.Count > 0
+                ? $"Hygiene {hygieneRewritten} Rewritten" + (hygieneFailures.Count > 0 ? $" {hygieneFailures.Count} FAILED" : "")
+                : null;
+
+            Label_FileSelection_Statistics_OperationStatus.Text =
+                $"Read {mFileList.Count} Image Files" + (browseCanceled ? " (canceled)" : "") +
+                (solverEnabled ? $"; Solved {solvedCount}" +
+                    (skippedCount > 0 ? $", Skipped {skippedCount}" : "") +
+                    (solveFailures.Count > 0 ? $", {solveFailures.Count} failed" : "") : "") +
+                (verifyEnabled ? $"; SHA OK {verifiedCount}" +
+                    (noChecksumCount > 0 ? $", No checksum {noChecksumCount}" : "") +
+                    (verifyFailures.Count > 0 ? $", {verifyFailures.Count} FAILED" : "") : "") +
+                (hygieneTasks.Count > 0 ? $"; Compressed {hygieneRewritten}" +
+                    (hygieneFailures.Count > 0 ? $", {hygieneFailures.Count} FAILED" : "") : "");
+
+            if (solveFailures.Count > 0)
             {
-                Label_FileSelection_Statistics_OperationStatus.Text =
-                    $"Read {mFileList.Count} Image Files" +
-                    (solverEnabled ? $"; Solved {solvedCount}" +
-                        (skippedCount > 0 ? $", Skipped {skippedCount}" : "") +
-                        (solveFailures.Count > 0 ? $", {solveFailures.Count} failed" : "") : "") +
-                    (verifyEnabled ? $"; SHA OK {verifiedCount}" +
-                        (noChecksumCount > 0 ? $", No checksum {noChecksumCount}" : "") +
-                        (verifyFailures.Count > 0 ? $", {verifyFailures.Count} FAILED" : "") : "");
+                MessageBox.Show(
+                    $"Solved {solvedCount} of {solvedCount + solveFailures.Count} light frames.\n\nFailed:\n\n"
+                    + string.Join("\n", solveFailures),
+                    "Plate Solve Results");
+            }
 
-                if (solveFailures.Count > 0)
-                {
-                    MessageBox.Show(
-                        $"Solved {solvedCount} of {solvedCount + solveFailures.Count} light frames.\n\nFailed:\n\n"
-                        + string.Join("\n", solveFailures),
-                        "Plate Solve Results");
-                }
+            if (verifyFailures.Count > 0)
+            {
+                // Cap the dialog; every failure is already in xfm.log at detection time.
+                IEnumerable<string> shown = verifyFailures.Take(30);
+                MessageBox.Show(
+                    $"{verifyFailures.Count} of {mFileList.Count} files FAILED SHA verification:\n\n"
+                    + string.Join("\n", shown)
+                    + (verifyFailures.Count > 30 ? $"\n… and {verifyFailures.Count - 30} more (see xfm.log)" : ""),
+                    "SHA Verification Results");
+            }
 
-                if (verifyFailures.Count > 0)
-                {
-                    // Cap the dialog; every failure is already in xfm.log at detection time.
-                    IEnumerable<string> shown = verifyFailures.Take(30);
-                    MessageBox.Show(
-                        $"{verifyFailures.Count} of {mFileList.Count} files FAILED SHA verification:\n\n"
-                        + string.Join("\n", shown)
-                        + (verifyFailures.Count > 30 ? $"\n… and {verifyFailures.Count - 30} more (see xfm.log)" : ""),
-                        "SHA Verification Results");
-                }
+            if (hygieneFailures.Count > 0)
+            {
+                // Cap the dialog; every failure is already in xfm.log at detection time. The original
+                // files are untouched (temp + atomic replace) and will be retried on the next browse.
+                IEnumerable<string> shownHygiene = hygieneFailures.Take(30);
+                MessageBox.Show(
+                    $"{hygieneFailures.Count} of {hygieneTasks.Count} compression rewrites FAILED (originals untouched):\n\n"
+                    + string.Join("\n", shownHygiene)
+                    + (hygieneFailures.Count > 30 ? $"\n… and {hygieneFailures.Count - 30} more (see xfm.log)" : ""),
+                    "Compression Hygiene Results");
             }
         }
 
@@ -556,7 +676,8 @@ namespace XisfFileManager
             int uncompressedCount = mFileList.Count - compressedCount;
             Label_FileSelection_Statistics_OperationStatus.Text =
                 readSummary + "\n" + compressedCount + " Compressed " + uncompressedCount + " Uncompressed"
-                + (mVerifyShaSummary is not null ? "  " + mVerifyShaSummary : "");
+                + (mVerifyShaSummary is not null ? "  " + mVerifyShaSummary : "")
+                + (mHygieneSummary is not null ? "  " + mHygieneSummary : "");
 
             Label_FileSelection_Statistics_SubFrameOverhead.Text = ImageCalculations.CalculateOverhead(mFileList);
             string stepsPerDegree = ImageCalculations.CalculateFocuserTemperatureCompensationCoefficient(mFileList);

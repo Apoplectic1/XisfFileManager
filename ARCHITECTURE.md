@@ -60,9 +60,11 @@ XISF files contain an XML metadata header with FITS-compatible keywords, binary 
 (attachments), and optional thumbnail attachments. (Format background: `DOMAIN.md`.)
 
 XFM treats the image data block as an **opaque byte array** — nothing in the app decodes pixels
-(statistics/calculations all come from FITS keywords). On save it compresses an uncompressed block
-to `zstd+sh` level 19 (plain `zstd`, no shuffle, for 1-byte samples) with a SHA-1 checksum; an
-already-compressed block (any codec — the existing zlib library included) is copied verbatim.
+(statistics/calculations all come from FITS keywords). Compression is **library hygiene in the
+Browse read pass** (below): any file browsed unhygienic is repaired in place. The save path still
+compresses an uncompressed block to `zstd+sh` level 19 (plain `zstd`, no shuffle, for 1-byte
+samples) with a SHA-1 checksum as a backstop; an already-compressed block (any codec — the
+existing zlib library included) is copied verbatim.
 
 ### Compression (consumed from AL — `Astronomy.XISF.Compression`)
 
@@ -75,8 +77,9 @@ deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
   2026-08-07 library benchmark (`docs/2026-08-07-compression-benchmark.md`: −11% vs the previous
   zlib-SmallestSize writes on lights; readers need zstd support — NINA 3.x / PI ≥ 1.8.9-2 / AL).
   AL's layer also encodes/decodes zlib / lz4 / lz4hc (±shuffle) and all five XISF checksum
-  algorithms; XFM emitted zlib(+sh) until 2026-08-07, so the existing library is predominantly zlib
-  and stays that way until the FORCE-gated recompress (ROADMAP #10).
+  algorithms; XFM emitted zlib(+sh) until 2026-08-07, so the existing library is predominantly
+  zlib — and **stays zlib**: compressed+checksummed files are never touched (mixed codecs are the
+  accepted end state; the ~26 GB full migration was consciously forgone, 2026-08-07).
 - `BlockCompressionInfo` — same parse/emit surface, read at load time into `XisfFile.Compression` /
   `IsImageCompressed`. Two deliberate deltas vs the vendored copy: `Parse` **fails fast**
   (`InvalidDataException`) on a malformed attribute for a known codec (previously lenient zeros —
@@ -89,6 +92,35 @@ deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
   ratio, never correctness, since it is recorded in the attribute and used on read.
 - Always stores the compressed result (even if not smaller) so a block marks itself done and isn't
   re-attempted on every save.
+
+### Browse-time compression hygiene (browse-compression-hygiene, 2026-08-07)
+
+Every Browse repairs unhygienic files automatically — **always on, no checkbox, exempt from
+PROTECT** (hygiene writes no keywords; Browse is deliberately no longer read-only). Criterion:
+block **uncompressed ∨ no checksum** (`!IsImageCompressed || !Compression.HasChecksum`). Remedy:
+in-place rewrite to `zstd+sh(19)` + SHA-1 via AL's **surgical rewriter**
+(`XisfBlockRewriter.RewriteAsync(source, target, codec[, level])`) — XML header byte-preserved
+except `compression`/`checksum`/`location` (+ signature length), block swapped, temp + atomic
+move, declared source checksums verified before re-encoding (a corrupt block fails loudly rather
+than being laundered under a fresh digest).
+
+Mechanics in `ReadHeadersAsync` (MainForm.cs): the sequential front half (header parse →
+Verify-SHA → solve) enqueues each unhygienic file onto a bounded pool
+(`SemaphoreSlim`, degree `min(6, max(2, ProcessorCount − 2))`; encode is the CPU cost —
+zstd-19 ≈ 2–6 MB/s/core, and a fresh NINA night arrives ~100 files uncompressed, so the pool is
+the recurring-nightly path, not a one-time optimization). Enqueue happens strictly **after** the
+file's solve — an uncompressed light is solved in place and must not be compressed out from
+under ASTAP. A **barrier** before `PopulateUiFromFiles`/`UpdateUI(ENABLED)` awaits every rewrite
+(250 ms UI-pumping loop → progress bar + label tick and late cancel clicks register); no hygiene
+write can outlive the browse, so post-browse operations never race a rewrite. On completion each
+`XisfFile`'s geometry is refreshed in place (`TargetAttachmentStart/Length`, `Compression`,
+`ItemSize`) — load-bearing: `UpdateFileAsync`'s verbatim block copy reads these, and a stale
+offset would corrupt the next save. Cancel: the existing Cancel button's `mBCancel` is checked
+between files and in the barrier — queued rewrites abandon, in-flight ones finish atomically;
+hygiene is idempotent, so the next browse repairs only what's left. Reporting:
+`Log.Diag("HYGIENE")`/`Log.Info` per file, `Hygiene N Rewritten` on the Statistics line
+(`mHygieneSummary`), capped failures dialog; a per-file failure leaves the original untouched
+and never stops the pass.
 
 ## Diagnostics — xfm.log + Ctrl+N (adopted 2026-08-06)
 
@@ -162,15 +194,20 @@ The filename rotation token (`S`/`M` prefix + `FormatRotationAngle`, `XisfFile.c
 jitter must land in one bucket; the fold is XFM naming policy only — `OBJCTROT` keeps the true
 0–360 angle and the CD matrix is ground truth.
 
-Mechanics (`Solver/AstapSolver.cs`): uncompressed XISF → `astap_cli -f` directly (read-only);
-compressed → AL `XisfImageReader` → minimal temp mono FITS (UInt16 only; else per-file failure).
-Hints from AL `XisfHeaderReader` (`-ra` RA/15, `-spd` Dec+90, `-fov` field height; blind `-r 180`
-fallback); always `-o <temp>` so `.ini`/`.wcs` never land beside library images; 60 s timeout;
-`.ini` `PLTSOLVD` gate with ASTAP's exit-code table as fallback messages. Position angle = AL
-`WcsOrientation.FromCdMatrix` + the ASTAP convention bridge (`360 − (Rotation − 180)`, parity
-inverted — NINA `ASTAPSolver`'s bridge, deliberately kept out of AL's generic math). A failed solve
-stamps nothing, is reported in a single post-browse summary, and never stops the pass; a missing
-ASTAP install refuses a checked browse up front (expected at `XisfConstants.AstapCliPath`).
+Mechanics (`Solver/AstapSolver.cs`): the solver binary is **`astap.exe` driven headless**
+(`XisfConstants.AstapPath`) — *not* `astap_cli.exe`, whose loader has no XISF support at all
+(NOTEBOOK 2026-08-07; only `astap.exe` compiles in `unit_xisf.pas`, uncompressed-XISF only).
+Uncompressed XISF → `astap.exe -f` directly (read-only, in place); compressed → AL
+`XisfBlockRewriter` (codec None) → surgical **temp uncompressed XISF** — one solver input format,
+any sample format (the old temp-FITS path and its UInt16-mono limit died 2026-08-07,
+browse-compression-hygiene). Hints from AL `XisfHeaderReader` (`-ra` RA/15, `-spd` Dec+90,
+`-fov` field height; blind `-r 180` fallback); always `-o <temp>` so `.ini`/`.wcs` never land
+beside library images; 60 s timeout; `.ini` `PLTSOLVD` gate with ASTAP's exit-code table as
+fallback messages. Position angle = AL `WcsOrientation.FromCdMatrix` + the ASTAP convention
+bridge (`360 − (Rotation − 180)`, parity inverted — NINA `ASTAPSolver`'s bridge, deliberately
+kept out of AL's generic math). A failed solve stamps nothing, is reported in a single
+post-browse summary, and never stops the pass; a missing ASTAP install refuses a checked browse
+up front (expected at `XisfConstants.AstapPath`).
 
 ### Enums (`Globals/Globals.cs`)
 
@@ -234,7 +271,7 @@ ASTAP install refuses a checked browse up front (expected at `XisfConstants.Asta
 - `Globals/Globals.cs`: Shared enums and global constants (two enums live elsewhere — see Enums above)
 - `Configuration/AppPaths.cs`: Machine-specific paths (E:\, F:\ drives)
 - `Configuration/XisfConstants.cs`: XISF signature size, max buffer size, the zstd write level
-  (`CompressionZstdLevel = 19`), and the ASTAP CLI path
+  (`CompressionZstdLevel = 19`), and the ASTAP path (`astap.exe` — the CLI binary cannot read XISF)
 - `Configuration/DirectoryFilters.cs`: Exclude lists for directory filtering
 
 ## Common tasks

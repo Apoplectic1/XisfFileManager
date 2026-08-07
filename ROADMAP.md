@@ -58,25 +58,26 @@
    filename does for an unsolved light with no fallback (no S token vs explicit marker —
    rule-16 flavored).
 
-10. **Browse-time compression hygiene (supersedes the FORCE-gated recompress — explored + decided
-    2026-08-07; not yet proposed)** — compression becomes fully independent, automatic hygiene in
-    the Browse read pass: any file **uncompressed or lacking a checksum** is rewritten in place
-    (surgical — XML byte-preserved except `compression`/`checksum`/`location`; block →
-    `zstd+sh(19)` + SHA-1; temp + atomic move). **Always on, no checkbox, exempt from Protect**
-    (Protect narrows to "no keyword writes"; Browse stops being read-only — stated decision).
-    Mixed codecs are the end state — compressed+checksummed zlib is never touched; the ~26 GB
-    migration is consciously forgone and **FORCE plays no role** (it now has no remaining job —
-    see #8). Per-file order: **solve before compress**. The surgical writer is a shared primitive
-    `(source, target, codec)` — the **solver's temp-FITS dies** (compressed solve inputs become
-    surgical temp uncompressed XISF; `WriteMinimalFits`, endian/BZERO/UInt16-only code deleted).
-    Side payload: no-checksum files (90/184 in the first field run) become verifiable — Verify
-    SHA coverage → 100%. Open: parallelism (leaning simple — hygiene shouldn't recur after the
-    initial pass) and first-pass cancel/progress UX. **Next step: revisit solve-before-compress
-    with fresh eyes, then openspec proposal.** Full rationale:
-    `docs/2026-08-07-browse-compression-hygiene-explore.md`.
+10. *(closed 2026-08-07 — browse-time compression hygiene shipped; see Recently shipped.
+    Decision record: `docs/2026-08-07-browse-compression-hygiene-explore.md`)*
 
 ## Recently shipped
 
+- **Browse-time compression hygiene (closes follow-up #10, 2026-08-07,
+  `browse-compression-hygiene`)** — every Browse repairs unhygienic files automatically: block
+  uncompressed ∨ no checksum → in-place surgical rewrite to `zstd+sh(19)` + SHA-1 (new AL
+  `XisfBlockRewriter`: XML byte-preserved except `compression`/`checksum`/`location`, temp +
+  atomic move, source checksums verified first). Always on, Protect-exempt (Browse is no longer
+  read-only — stated decision); compressed+checksummed files never touched (mixed zlib/zstd end
+  state). Bounded worker pool (≤6, off UI thread — a fresh NINA night is ~100 uncompressed
+  files, the recurring case) with a browse-completion barrier, in-memory geometry refresh
+  (prevents stale-offset save corruption), Cancel-button support (idempotent/resumable), status
+  counts + capped failures dialog. Solver rides the same primitive: **temp-FITS died**
+  (compressed solve inputs → surgical temp uncompressed XISF; UInt16-mono limit gone) and the
+  solve spot-check exposed that **`astap_cli.exe` cannot read XISF at all** — XFM now drives
+  `astap.exe` headless (NOTEBOOK 2026-08-07; fixes the latently broken in-place uncompressed
+  solve path). Manual pass pending (fresh-night browse, cancel/resume, hygiene-then-save,
+  compressed-frame solve in-app). Side payload: Verify-SHA coverage → 100% after first pass.
 - **Verify SHA on checked browse (closes follow-up #6, 2026-08-07)** — `CheckBox_VerifySha`
   (Directory Selection, solver pattern): checked browse verifies every file's stored block
   against its declared checksum via new AL `XisfChecksumVerifier` (locate → hash stored bytes →

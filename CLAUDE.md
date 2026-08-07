@@ -38,6 +38,12 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
   the method; deliberate write paths like Calibration/FluxDensity set `FORCE` first); `UPDATE_NEW`
   writes when keywords changed **or** the block is uncompressed; `FORCE` always writes. Saves
   rewrite files in place (temp file + atomic move) — see cautions in `VERIFICATION.md`.
+- **Browse writes files (2026-08-07):** compression hygiene rewrites any uncompressed or
+  checksum-less block in place during every browse — always on, exempt from PROTECT (no keyword
+  writes; hygiene bypasses `UpdateFileAsync` entirely). Point Browse at copies when testing.
+- **The plate solver is `astap.exe`, not `astap_cli.exe`** — the CLI binary has no XISF reader
+  at all (NOTEBOOK 2026-08-07); changing `XisfConstants.AstapPath` back silently breaks every
+  solve.
 - **`APTAREA` is optimistic:** full circular π·r², obstructions ignored — don't trust it for
   SNR/throughput math on the Newtonian (ROADMAP follow-up #2).
 - **Exposure lives in `EXPTIME`:** the `ExposureSeconds` setter writes EXPTIME (dropping any legacy

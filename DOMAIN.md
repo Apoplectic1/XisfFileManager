@@ -13,9 +13,19 @@ renames files to a canonical scheme, and maintains a calibration-frame library.
 ## XISF format
 
 XISF (Extensible Image Serialization Format) is an astronomy image format from PixInsight: an XML
-metadata header carrying FITS-compatible keywords plus binary image-data attachments. The on-disk
-compressed form used by PixInsight/NINA is `zlib+sh` (byte-shuffle + zlib) with a SHA-1 block
-checksum — the format XFM targets on save (mechanics and the plain-`zlib` fallback: `ARCHITECTURE.md`).
+metadata header carrying FITS-compatible keywords plus binary image-data attachments. XFM writes
+`zstd+sh` level 19 with a SHA-1 block checksum (since 2026-08-07; readers need zstd support —
+NINA 3.x, PixInsight ≥ 1.8.9-2); the legacy library remains predominantly PixInsight/NINA-era
+`zlib+sh` and stays that way — mixed codecs are the accepted end state (mechanics:
+`ARCHITECTURE.md`).
+
+Every Browse **repairs unhygienic files in place** (uncompressed or checksum-less blocks →
+compressed + checksummed; automatic, no opt-out; Browse is not a read-only operation). **Gotcha —
+a fresh checksum is not provenance:** compressing a file that never had a checksum *certifies the
+bytes as they are now*. If silent rot had already occurred, the new SHA-1 faithfully certifies
+the rotten bytes — unavoidable, since an unverifiable block is unverifiable. A block checksum
+always means "intact since this checksum was written", never "intact since capture". Side
+payload of the first pass: Verify-SHA coverage reaches 100% of the library.
 
 ## Plate solving: measured vs planned (2026-08-06)
 

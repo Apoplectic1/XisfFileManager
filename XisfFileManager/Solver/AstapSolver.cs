@@ -3,6 +3,7 @@ using System.Globalization;
 using Astronomy.Core.Astrometry;
 using Astronomy.Diagnostics;
 using Astronomy.XISF;
+using Astronomy.XISF.Compression;
 using XisfFileManager.Configuration;
 
 namespace XisfFileManager.Solver
@@ -41,18 +42,20 @@ namespace XisfFileManager.Solver
     }
 
     /// <summary>
-    /// Local ASTAP plate solving for the read pass: hand an uncompressed XISF to astap_cli directly,
-    /// or decode a compressed one (shared library) into a minimal temporary FITS first. All solver
-    /// inputs/outputs live in the temp directory (-o redirect) — the image library never gains solver
-    /// files. UI-free; MainForm owns the checkbox gate and failure presentation.
+    /// Local ASTAP plate solving for the read pass: hand an uncompressed XISF to astap.exe directly
+    /// (headless, NINA's pattern — astap_cli.exe cannot read XISF; see XisfConstants.AstapPath), or
+    /// surgically rewrite a compressed one (shared library) into a temporary uncompressed XISF
+    /// first — the solver consumes one input format either way. All solver inputs/outputs live in the
+    /// temp directory (-o redirect) — the image library never gains solver files. UI-free; MainForm
+    /// owns the checkbox gate and failure presentation.
     /// </summary>
     public static class AstapSolver
     {
         private const int SolveTimeoutMs = 60_000;
         private const string HintedRadiusDeg = "10";
 
-        /// <summary>True when the ASTAP CLI executable exists at the configured path.</summary>
-        public static bool IsInstalled => File.Exists(XisfConstants.AstapCliPath);
+        /// <summary>True when the ASTAP executable exists at the configured path.</summary>
+        public static bool IsInstalled => File.Exists(XisfConstants.AstapPath);
 
         /// <summary>
         /// Solves one XISF file. Never throws for solve-level failures (clouds, few stars, bad frame) —
@@ -74,18 +77,14 @@ namespace XisfFileManager.Solver
                 string solveInput;
                 if (isCompressed)
                 {
-                    XisfImageData image = await XisfImageReader.ReadImageAsync(filePath, ct);
-                    if (image.SampleFormat != "UInt16" || image.Channels != 1)
-                    {
-                        return LogOutcome(Fail($"unsupported solve input ({image.SampleFormat}, {image.Channels} channel(s)) — UInt16 mono only"), name, stopwatch);
-                    }
-                    solveInput = tempBase + ".fit";
-                    WriteMinimalFits(solveInput, image);
-                    Log.Diag("SOLVER", $"temp FITS {image.Width}x{image.Height} -> {solveInput}");
+                    solveInput = tempBase + ".xisf";
+                    XisfBlockRewriteResult rewrite = await XisfBlockRewriter.RewriteAsync(
+                        filePath, solveInput, BlockCodec.None, ct: ct);
+                    Log.Diag("SOLVER", $"temp uncompressed XISF ({rewrite.AttachmentSize} bytes) -> {solveInput}");
                 }
                 else
                 {
-                    solveInput = filePath; // astap_cli reads uncompressed XISF natively (read-only)
+                    solveInput = filePath; // astap.exe reads uncompressed XISF natively (read-only)
                 }
 
                 string args = BuildArguments(solveInput, tempBase, header);
@@ -111,7 +110,7 @@ namespace XisfFileManager.Solver
             }
             finally
             {
-                foreach (string ext in new[] { ".fit", ".ini", ".wcs", ".log" })
+                foreach (string ext in new[] { ".xisf", ".ini", ".wcs", ".log" })
                 {
                     try { File.Delete(tempBase + ext); } catch { /* best-effort temp cleanup */ }
                 }
@@ -193,7 +192,7 @@ namespace XisfFileManager.Solver
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = XisfConstants.AstapCliPath,
+                    FileName = XisfConstants.AstapPath,
                     Arguments = arguments,
                     UseShellExecute = false,
                     CreateNoWindow = true,
@@ -289,54 +288,5 @@ namespace XisfFileManager.Solver
             _ => $"solver exit code {exitCode}",
         };
 
-        /// <summary>
-        /// Minimal mono FITS for the solver: SIMPLE/BITPIX=16/NAXIS=2 + BZERO=32768, big-endian
-        /// signed data (value − 32768), padded to 2880-byte blocks. No keywords — hints ride the CLI.
-        /// </summary>
-        private static void WriteMinimalFits(string path, XisfImageData image)
-        {
-            const int block = 2880;
-            List<string> cards = new()
-            {
-                FitsCard("SIMPLE", "T"),
-                FitsCard("BITPIX", "16"),
-                FitsCard("NAXIS", "2"),
-                FitsCard("NAXIS1", image.Width.ToString(CultureInfo.InvariantCulture)),
-                FitsCard("NAXIS2", image.Height.ToString(CultureInfo.InvariantCulture)),
-                FitsCard("BZERO", "32768"),
-                FitsCard("BSCALE", "1"),
-                "END".PadRight(80),
-            };
-
-            using FileStream fs = new(path, FileMode.Create, FileAccess.Write);
-
-            byte[] headerBytes = System.Text.Encoding.ASCII.GetBytes(string.Concat(cards));
-            fs.Write(headerBytes, 0, headerBytes.Length);
-            WritePadding(fs, block - (headerBytes.Length % block));
-
-            // UInt16 little-endian pixels -> big-endian signed shorts offset by BZERO.
-            byte[] pixels = image.Pixels;
-            byte[] data = new byte[pixels.Length];
-            for (int i = 0; i < pixels.Length; i += 2)
-            {
-                int value = pixels[i] | (pixels[i + 1] << 8);
-                short stored = (short)(value - 32768);
-                data[i] = (byte)((stored >> 8) & 0xFF);
-                data[i + 1] = (byte)(stored & 0xFF);
-            }
-            fs.Write(data, 0, data.Length);
-            int remainder = data.Length % block;
-            if (remainder != 0) WritePadding(fs, block - remainder);
-        }
-
-        private static string FitsCard(string keyword, string value) =>
-            (keyword.PadRight(8) + "= " + value.PadLeft(20)).PadRight(80);
-
-        private static void WritePadding(FileStream fs, int count)
-        {
-            if (count <= 0) return;
-            byte[] pad = new byte[count];
-            fs.Write(pad, 0, count);
-        }
     }
 }

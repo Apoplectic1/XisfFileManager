@@ -30,6 +30,25 @@ still needs a human in-app check.
 
 - Keyword updates **rewrite XISF files in place** (temp file + atomic move). Test against copies or
   `TestData/`, not the live image library, unless the write is the thing being verified.
+- **Browse itself writes since 2026-08-07** (compression hygiene): browsing a folder rewrites any
+  uncompressed or checksum-less file in place. Point Browse at copies when the write side effect is
+  unwanted during testing — there is no opt-out checkbox by design.
+
+## Manual pass: browse-time compression hygiene (2026-08-07)
+
+Against a **copy** of a mixed folder (fresh uncompressed + legacy zlib-no-checksum + legacy
+zlib+checksum), verify:
+
+1. Browse → uncompressed and no-checksum files rewritten `zstd+sh(19)` + SHA-1 (header shows
+   `compression="zstd+sh:…"` `checksum="sha-1:…"`); a compressed+checksummed zlib file is
+   byte-identical; one rewritten file **opens in PixInsight**.
+2. Statistics line shows `Hygiene N Rewritten`; a Verify-SHA re-browse reports 100% verified.
+3. Cancel mid-pass → UI restored, files read so far kept; re-browse repairs only the remainder.
+4. Hygiene-then-save: Update Keywords on a rewritten file in the same session → valid file
+   (checks the in-memory geometry refresh — a corrupt output here means a stale block offset).
+5. Solver on a compressed backlog frame → solves via temp `.xisf` (no `.fit` in `%TEMP%`, no
+   solver files beside library images); a fresh **uncompressed** light solves in place
+   (exercises the `astap.exe` switch — `astap_cli` could never read XISF).
 
 ## CI
 
