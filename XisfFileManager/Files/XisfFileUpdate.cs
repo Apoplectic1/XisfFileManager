@@ -204,8 +204,9 @@ namespace XisfFileManager.Files
                     // *******************************************************************************************************************************
                     // *******************************************************************************************************************************
 
-                    // Compress the image data block (zlib+sh + SHA-1) unless it is already compressed.
-                    // Already-compressed blocks (any codec) are copied verbatim with their existing attributes.
+                    // Compress the image data block (zstd+sh level 19 + SHA-1) unless it is already compressed.
+                    // Already-compressed blocks (any codec — the existing zlib library included) are copied
+                    // verbatim with their existing attributes; recompression is the FORCE-gated pass (ROADMAP #10).
                     bool compressNow = !xFile.IsImageCompressed;
                     BlockCompressionResult compressionResult = default;
                     if (compressNow)
@@ -213,7 +214,8 @@ namespace XisfFileManager.Files
                         byte[] rawImageBlock = new byte[xFile.TargetAttachmentLength];
                         Array.Copy(binaryFileData, xFile.TargetAttachmentStart, rawImageBlock, 0, xFile.TargetAttachmentLength);
 
-                        compressionResult = XisfBlockCompression.Compress(rawImageBlock, xFile.ItemSize);
+                        compressionResult = XisfBlockCompression.Compress(rawImageBlock, xFile.ItemSize,
+                            BlockCodec.Zstd, XisfConstants.CompressionZstdLevel);
 
                         // Add compression/checksum to the <Image> before location/padding converge against the final header.
                         ApplyCompressionAttributes(xmlDoc, compressionResult.Info);

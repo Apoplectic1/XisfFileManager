@@ -61,8 +61,8 @@ XISF files contain an XML metadata header with FITS-compatible keywords, binary 
 
 XFM treats the image data block as an **opaque byte array** — nothing in the app decodes pixels
 (statistics/calculations all come from FITS keywords). On save it compresses an uncompressed block
-to `zlib+sh` (plain `zlib`, no shuffle, for 1-byte samples) with a SHA-1 checksum; an
-already-compressed block (any codec) is copied verbatim.
+to `zstd+sh` level 19 (plain `zstd`, no shuffle, for 1-byte samples) with a SHA-1 checksum; an
+already-compressed block (any codec — the existing zlib library included) is copied verbatim.
 
 ### Compression (consumed from AL — `Astronomy.XISF.Compression`)
 
@@ -70,10 +70,13 @@ Since 2026-08-06 (`adopt-al-xisf-compression`) the codec comes from the sibling 
 `ProjectReference` — XFM's **first AL dependency**; the vendored `Files/Compression/` duplicate is
 deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
 
-- `XisfBlockCompression.Compress(raw, itemSize)` — unchanged call and unchanged bytes: byte-shuffle →
-  zlib (`SmallestSize` ≈ zlib level 9 ≈ PixInsight "level 100") → SHA-1 over the compressed bytes.
-  AL's layer also encodes/decodes lz4 / lz4hc / zstd (±shuffle) and all five XISF checksum
-  algorithms; XFM emits only zlib(+sh)+SHA-1 today (`XisfConstants.CompressionCodec`).
+- `XisfBlockCompression.Compress(raw, itemSize, BlockCodec.Zstd, XisfConstants.CompressionZstdLevel)`
+  — byte-shuffle → zstd level 19 → SHA-1 over the compressed bytes. Codec + level chosen by the
+  2026-08-07 library benchmark (`docs/2026-08-07-compression-benchmark.md`: −11% vs the previous
+  zlib-SmallestSize writes on lights; readers need zstd support — NINA 3.x / PI ≥ 1.8.9-2 / AL).
+  AL's layer also encodes/decodes zlib / lz4 / lz4hc (±shuffle) and all five XISF checksum
+  algorithms; XFM emitted zlib(+sh) until 2026-08-07, so the existing library is predominantly zlib
+  and stays that way until the FORCE-gated recompress (ROADMAP #10).
 - `BlockCompressionInfo` — same parse/emit surface, read at load time into `XisfFile.Compression` /
   `IsImageCompressed`. Two deliberate deltas vs the vendored copy: `Parse` **fails fast**
   (`InvalidDataException`) on a malformed attribute for a known codec (previously lenient zeros —
@@ -81,8 +84,8 @@ deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
   (`Other`) codec — unreachable here, since XFM only formats attributes for blocks it just
   compressed (`ApplyCompressionAttributes` runs only under `compressNow`).
 - Item size (bytes/sample for the shuffle) comes from the `sampleFormat` attribute, falling back to
-  `blockLength / (W×H×channels)` from `geometry`. Shuffle is applied when item size > 1 (`zlib+sh`);
-  1-byte samples take the no-shuffle branch and write plain `zlib`. A wrong item size only costs
+  `blockLength / (W×H×channels)` from `geometry`. Shuffle is applied when item size > 1 (`zstd+sh`);
+  1-byte samples take the no-shuffle branch and write plain `zstd`. A wrong item size only costs
   ratio, never correctness, since it is recorded in the attribute and used on read.
 - Always stores the compressed result (even if not smaller) so a block marks itself done and isn't
   re-attempted on every save.
@@ -178,7 +181,8 @@ ASTAP install refuses a checked browse up front (expected at `XisfConstants.Asta
 - `eUpdateOutcome`: result reporting for `XisfFileUpdate.LastUpdateOutcome`
 - `eMessageMode`, `eBufferData`, `eUiState`: messaging/buffer/UI state
 - Two enums live outside Globals.cs, both without the `e` prefix: `BlockCodec` (AL's
-  `Astronomy.XISF.Compression` since 2026-08-06; carries lz4/lz4hc/zstd members XFM never emits) and
+  `Astronomy.XISF.Compression` since 2026-08-06; XFM emits `Zstd` — carries zlib/lz4/lz4hc members
+  XFM reads but never writes) and
   `ExcludeType` (`Directories/DirectoryOperations.cs`)
 
 ## Code conventions
@@ -225,14 +229,12 @@ ASTAP install refuses a checked browse up front (expected at `XisfConstants.Asta
   detection, analysis, UI color helpers
 - `Models/CaptureSoftwareConfiguration.cs` / `Services/CaptureSoftwareService.cs`: capture software
   config base + detection and analysis
-- `Files/Compression/XisfBlockCompression.cs` + `BlockCompressionInfo.cs`: pure, UI-free `zlib+sh` +
-  SHA-1 image-block codec and its attribute parser/formatter (see Compression above)
 - `Helpers/UIHelpers.cs`: Common UI control manipulation (ClearComboBox, ResetRadioButton, etc.)
 - `MainForm.Designer.cs`: Auto-generated UI — TabIndex values manually fixed for proper navigation
 - `Globals/Globals.cs`: Shared enums and global constants (two enums live elsewhere — see Enums above)
 - `Configuration/AppPaths.cs`: Machine-specific paths (E:\, F:\ drives)
-- `Configuration/XisfConstants.cs`: XISF signature size, max buffer size, and compression/checksum
-  codec names (`zlib+sh`, plain-`zlib` fallback for 1-byte samples, `sha-1`)
+- `Configuration/XisfConstants.cs`: XISF signature size, max buffer size, the zstd write level
+  (`CompressionZstdLevel = 19`), and the ASTAP CLI path
 - `Configuration/DirectoryFilters.cs`: Exclude lists for directory filtering
 
 ## Common tasks

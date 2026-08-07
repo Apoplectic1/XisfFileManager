@@ -67,6 +67,13 @@
 
 ## Recently shipped
 
+- **Saves write `zstd+sh` level 19 (2026-08-07)** — benchmark-driven codec switch
+  (`docs/2026-08-07-compression-benchmark.md`: −11% vs zlib-SmallestSize on lights, the win
+  appears only at zstd's level-15+ strategy switch; zstd-22 adds nothing). AL `Compress` gained
+  the optional zstd level (AL `zstd-level`, level is encoder effort only — any zstd reader decodes
+  any level; NINA 3.x / PI ≥ 1.8.9-2 verified). Existing zlib blocks still copy verbatim — the
+  ~26 GB recompress is follow-up #10 (FORCE-gated). New `tools/CompressionBench` harness stays
+  rerunnable.
 - **Released `v2.3.0` (2026-08-07)** — ships the filename rotation fold below; carries AL `1.5.2`
   (docs-only AL publish — clean-stamp coordination). Follow-up #9 resolved the same day: the fold
   becomes AL named properties (`FramingAngleDegrees` beside `PositionAngleDegrees`), mirrored in
