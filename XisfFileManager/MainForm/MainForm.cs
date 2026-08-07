@@ -38,6 +38,10 @@ namespace XisfFileManager
         private bool mBCancel;
         private readonly XisfFileUpdate mXisfFileUpdate;
         private eKeywordUpdateMode mKeywordUpdateProtection;
+
+        // Verify-SHA summary from the last browse (null when the checkbox was unchecked) — shown in the
+        // Statistics groupbox by PopulateUiFromFiles, which repaints OperationStatus after the read pass.
+        private string? mVerifyShaSummary;
         private eUiState mUiState;
 
         // ##########################################################################################################################
@@ -356,6 +360,10 @@ namespace XisfFileManager
             Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, skipped={skippedCount}, failed={solveFailures.Count}, "
                    + $"verified={verifiedCount}, noChecksum={noChecksumCount}, verifyFailed={verifyFailures.Count}");
 
+            mVerifyShaSummary = verifyEnabled
+                ? $"{verifiedCount} SHA Verified {noChecksumCount} No Checksum {verifyFailures.Count} Failed"
+                : null;
+
             if (solverEnabled || verifyEnabled)
             {
                 Label_FileSelection_Statistics_OperationStatus.Text =
@@ -547,7 +555,8 @@ namespace XisfFileManager
             int compressedCount = mFileList.Count(file => file.IsImageCompressed);
             int uncompressedCount = mFileList.Count - compressedCount;
             Label_FileSelection_Statistics_OperationStatus.Text =
-                readSummary + "\n" + compressedCount + " Compressed " + uncompressedCount + " Uncompressed";
+                readSummary + "\n" + compressedCount + " Compressed " + uncompressedCount + " Uncompressed"
+                + (mVerifyShaSummary is not null ? "\n" + mVerifyShaSummary : "");
 
             Label_FileSelection_Statistics_SubFrameOverhead.Text = ImageCalculations.CalculateOverhead(mFileList);
             string stepsPerDegree = ImageCalculations.CalculateFocuserTemperatureCompensationCoefficient(mFileList);
