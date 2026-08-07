@@ -353,6 +353,8 @@
             // CheckBox_Solver
             // 
             CheckBox_Solver.AutoSize = true;
+            CheckBox_Solver.Checked = true;
+            CheckBox_Solver.CheckState = CheckState.Checked;
             CheckBox_Solver.Location = new Point(129, 46);
             CheckBox_Solver.Name = "CheckBox_Solver";
             CheckBox_Solver.Size = new Size(58, 19);
@@ -1142,6 +1144,8 @@
             // CheckBox_KeywordUpdateTab_Telescope_Riccardi
             // 
             CheckBox_KeywordUpdateTab_Telescope_Riccardi.AutoSize = true;
+            CheckBox_KeywordUpdateTab_Telescope_Riccardi.Checked = true;
+            CheckBox_KeywordUpdateTab_Telescope_Riccardi.CheckState = CheckState.Checked;
             CheckBox_KeywordUpdateTab_Telescope_Riccardi.Location = new Point(20, 114);
             CheckBox_KeywordUpdateTab_Telescope_Riccardi.Margin = new Padding(4, 3, 4, 3);
             CheckBox_KeywordUpdateTab_Telescope_Riccardi.Name = "CheckBox_KeywordUpdateTab_Telescope_Riccardi";
