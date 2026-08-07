@@ -22,15 +22,21 @@
    distinction entirely, a hint the per-keyword mode split may not be carrying its weight. Design
    task, not a quick fix.
 
-9. **Where does the mod-180 rotation fold live? (tabled 2026-08-06)** — today the fold is
-   format-time only (`FormatRotationAngle`); `OBJCTROT` on disk is stamped un-folded 0–360. When
-   TSM rescan starts reading `OBJCTROT` for framings (the `°(M)` backlog batch), the PA ≡ PA+180
-   rule becomes a two-consumer domain fact. Options discussed: fold at the stamp
-   (`SetPlateSolution`, disk becomes canonical [0,180) — leading candidate), AL `FoldTo180`
-   helper, or defer. Also pending: retire the mechanical `M` fallback (`RotatorPosition` in
-   `RotationAngle`) once the backlog is solved. Tangentially tied to #8 — folding at the stamp
-   re-opens what "solved values always win" means for already-stamped (skip-presolved) frames,
-   so settle the stamp semantics alongside the mode-split design.
+9. **Where does the mod-180 rotation fold live? (tabled 2026-08-06; reframed 2026-08-07)** —
+   today the fold is format-time only (`FormatRotationAngle`); `OBJCTROT` on disk is stamped
+   un-folded 0–360. When TSM rescan starts reading `OBJCTROT` for framings (the `°(M)` backlog
+   batch), the PA ≡ PA+180 rule becomes a two-consumer domain fact. The real question isn't
+   "XFM or AL" — it's **normalize at the writer vs. share the fold at the readers**:
+   - **Fold at the stamp** (`SetPlateSolution`; disk becomes canonical [0,180)) — one writer
+     normalizes, consumers stay dumb. Cleaner end-state, but changes the on-disk contract and
+     re-opens what "solved values always win" means for already-stamped (skip-presolved)
+     frames — settle alongside the #8 mode-split design.
+   - **AL `FoldTo180` helper** (disk keeps true 0–360; each consumer folds at use) — smaller,
+     reversible, available without touching #8. Mechanism in AL, policy (when to fold) stays
+     consumer-side; the shared payload is the subtle fold→round→fold rounding-overshoot dance
+     TSM would otherwise re-derive naively.
+   Also pending: retire the mechanical `M` fallback (`RotatorPosition` in `RotationAngle`)
+   once the backlog is solved.
 
 ## Recently shipped
 
