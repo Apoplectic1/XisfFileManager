@@ -274,7 +274,15 @@ namespace XisfFileManager
             int solvedCount = 0;
             int skippedCount = 0;
             List<string> solveFailures = new();
-            Log.Info($"Browse read start: {Files.DirectoryOperations.FileInfoList.Count} files, solver={solverEnabled}");
+
+            // SHA verification rides the read pass (ROADMAP #6): all frame types — corruption doesn't
+            // care about lights vs masters. Detection reports and continues; it never aborts the browse.
+            bool verifyEnabled = CheckBox_VerifySha.Checked;
+            int verifiedCount = 0;
+            int noChecksumCount = 0;
+            List<string> verifyFailures = new();
+
+            Log.Info($"Browse read start: {Files.DirectoryOperations.FileInfoList.Count} files, solver={solverEnabled}, verifySha={verifyEnabled}");
 
             foreach (FileInfo xFile in Files.DirectoryOperations.FileInfoList)
             {
@@ -288,6 +296,35 @@ namespace XisfFileManager
                 };
 
                 await mXmlReader.ReadXisfFileHeaderKeywords(mFile);
+
+                if (verifyEnabled)
+                {
+                    try
+                    {
+                        Astronomy.XISF.XisfChecksumResult verification =
+                            await Astronomy.XISF.XisfChecksumVerifier.VerifyAsync(mFile.FilePath);
+                        switch (verification.Verdict)
+                        {
+                            case Astronomy.XISF.XisfChecksumVerdict.Verified:
+                                verifiedCount++;
+                                break;
+                            case Astronomy.XISF.XisfChecksumVerdict.NoChecksum:
+                                noChecksumCount++;
+                                break;
+                            default:
+                                verifyFailures.Add(xFile.Name + " — " + verification.Detail);
+                                Log.Error($"SHA mismatch: {xFile.Name} — {verification.Detail}");
+                                break;
+                        }
+                    }
+                    catch (Exception ex) when (ex is IOException or InvalidDataException)
+                    {
+                        // Structural corruption (bad XML, truncated attachment) or I/O trouble — same
+                        // inventory bucket as a digest mismatch: report it, keep browsing.
+                        verifyFailures.Add(xFile.Name + " — " + ex.Message);
+                        Log.Error($"SHA verify failed: {xFile.Name} — {ex.Message}");
+                    }
+                }
 
                 if (solverEnabled && mFile.FrameType == eFrame.LIGHT)
                 {
@@ -316,20 +353,37 @@ namespace XisfFileManager
 
             mFileList.Sort((a, b) => a.CaptureTime.CompareTo(b.CaptureTime)); // oldest is first
 
-            Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, skipped={skippedCount}, failed={solveFailures.Count}");
+            Log.Info($"Browse read done: {mFileList.Count} files, solved={solvedCount}, skipped={skippedCount}, failed={solveFailures.Count}, "
+                   + $"verified={verifiedCount}, noChecksum={noChecksumCount}, verifyFailed={verifyFailures.Count}");
 
-            if (solverEnabled)
+            if (solverEnabled || verifyEnabled)
             {
                 Label_FileSelection_Statistics_OperationStatus.Text =
-                    $"Read {mFileList.Count} Image Files; Solved {solvedCount}" +
-                    (skippedCount > 0 ? $", Skipped {skippedCount}" : "") +
-                    (solveFailures.Count > 0 ? $", {solveFailures.Count} failed" : "");
+                    $"Read {mFileList.Count} Image Files" +
+                    (solverEnabled ? $"; Solved {solvedCount}" +
+                        (skippedCount > 0 ? $", Skipped {skippedCount}" : "") +
+                        (solveFailures.Count > 0 ? $", {solveFailures.Count} failed" : "") : "") +
+                    (verifyEnabled ? $"; SHA OK {verifiedCount}" +
+                        (noChecksumCount > 0 ? $", No checksum {noChecksumCount}" : "") +
+                        (verifyFailures.Count > 0 ? $", {verifyFailures.Count} FAILED" : "") : "");
+
                 if (solveFailures.Count > 0)
                 {
                     MessageBox.Show(
                         $"Solved {solvedCount} of {solvedCount + solveFailures.Count} light frames.\n\nFailed:\n\n"
                         + string.Join("\n", solveFailures),
                         "Plate Solve Results");
+                }
+
+                if (verifyFailures.Count > 0)
+                {
+                    // Cap the dialog; every failure is already in xfm.log at detection time.
+                    IEnumerable<string> shown = verifyFailures.Take(30);
+                    MessageBox.Show(
+                        $"{verifyFailures.Count} of {mFileList.Count} files FAILED SHA verification:\n\n"
+                        + string.Join("\n", shown)
+                        + (verifyFailures.Count > 30 ? $"\n… and {verifyFailures.Count - 30} more (see xfm.log)" : ""),
+                        "SHA Verification Results");
                 }
             }
         }

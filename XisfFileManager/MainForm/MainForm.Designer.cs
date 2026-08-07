@@ -194,6 +194,7 @@
             RadioButton_KeywordsTab_ImageType_Filter_Green = new RadioButton();
             RadioButton_KeywordsTab_ImageType_Filter_O3 = new RadioButton();
             TabControl = new TabControl();
+            CheckBox_VerifySha = new CheckBox();
             GroupBox_FileSelection_SequenceNumbering.SuspendLayout();
             GroupBox_FileSelection_Count.SuspendLayout();
             GroupBox_FileSelection_DirectorySelection.SuspendLayout();
@@ -333,6 +334,7 @@
             // 
             // GroupBox_FileSelection_DirectorySelection
             // 
+            GroupBox_FileSelection_DirectorySelection.Controls.Add(CheckBox_VerifySha);
             GroupBox_FileSelection_DirectorySelection.Controls.Add(CheckBox_Solver);
             GroupBox_FileSelection_DirectorySelection.Controls.Add(CheckBox_FileSelection_DirectorySelection_CalibrationIds);
             GroupBox_FileSelection_DirectorySelection.Controls.Add(GroupBox_FileSelection_DirectorySelection_FluxDensity);
@@ -2124,6 +2126,16 @@
             TabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
             TabControl.Selecting += TabControl_Selecting;
             // 
+            // CheckBox_VerifySha
+            // 
+            CheckBox_VerifySha.AutoSize = true;
+            CheckBox_VerifySha.Location = new Point(272, 24);
+            CheckBox_VerifySha.Name = "CheckBox_VerifySha";
+            CheckBox_VerifySha.Size = new Size(81, 19);
+            CheckBox_VerifySha.TabIndex = 26;
+            CheckBox_VerifySha.Text = "Verify SHA";
+            CheckBox_VerifySha.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -2349,5 +2361,6 @@
         private System.Windows.Forms.GroupBox GroupBox_FileSelection_DirectorySelection_FluxDensity;
         private CheckBox CheckBox_FileSelection_DirectorySelection_CalibrationIds;
         private CheckBox CheckBox_Solver;
+        private CheckBox CheckBox_VerifySha;
     }
 }

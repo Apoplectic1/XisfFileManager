@@ -10,13 +10,7 @@
 3. **Focal-ratio consistency coloring** — if a FOCRATIO readout is added to the Telescope groupbox, mirror the focal-length consistency check in `TelescopeService`/`TelescopeAnalysis` (distinct-ratio detection + red/black label color).
 4. **Wire `XisfBlockCompression.Decompress` into a runtime path** (was #5) — the codec is compress-only today because XFM treats image blocks as opaque. Needed when the flux feature gains real pixel read/write; at that point re-evaluate `Astronomy.PCL` for true image decode/encode (the codec here only covers the byte-block layer).
 5. **Preserve (then compress) thumbnail/ICC blocks** (was #6) — saves currently strip them unconditionally: `RemoveUnwantedAttachments` deletes Thumbnail/ICCProfile/DisplayFunction elements and non-main attachments are ignored when building the output (XisfFileUpdate.cs:304,368-382). The plan needs a preserve/copy step before compression is even on the table.
-6. **Verify input checksums on read** (was #7; **design set 2026-08-07** — wire the user-added
-   `CheckBox_VerifySha`, Directory Selection, solver pattern): checked browse reads each stored
-   block, recomputes the declared digest, reports Verified / Failed / No-checksum (status line +
-   per-failure log + failures dialog; **report-don't-abort** — detection is the feature, one
-   corrupt file must not kill the browse). All frame types; default unchecked (full-file I/O,
-   ~50 ms/file). Mechanism: new **verify-only AL entry** in `Astronomy.XISF` (locate block →
-   hash stored bytes → compare; no decompress) — consumer-neutral, TSM-reusable; XFM wires counts.
+6. *(closed 2026-08-07 — Verify SHA shipped; see Recently shipped)*
 7. **AL adoption prep (sln membership)** — when `Astronomy.*` `ProjectReference`s land, also add those projects to `XisfFileManager.sln` with config mappings (`Debug|x64`/`Release|x64` ActiveCfg **and** Build.0; Any CPU → Any CPU; x86 rows ActiveCfg-only onto x64). TP lesson 2026-08-02: sln builds *unset* Configuration/Platform for non-member references → silent **Debug** AL DLLs in dev builds. XFM's release path is immune (project-level publish flows Configuration), and `release.ps1`'s conditional AL gate arms itself when `Astronomy.Core.dll` appears in the payload. Verify with `dotnet build XisfFileManager.sln -c Release`: every `Astronomy.* ->` line must say `x64\Release`.
 
 8. **Revisit UPDATE_NEW/FORCE/PROTECT — plan what the keyword-update modes mean (user, 2026-08-06;
@@ -67,6 +61,12 @@
 
 ## Recently shipped
 
+- **Verify SHA on checked browse (closes follow-up #6, 2026-08-07)** — `CheckBox_VerifySha`
+  (Directory Selection, solver pattern): checked browse verifies every file's stored block
+  against its declared checksum via new AL `XisfChecksumVerifier` (locate → hash stored bytes →
+  compare; no decompress). Report-don't-abort: status-line counts (`SHA OK / No checksum /
+  FAILED`), per-failure `Log.Error`, capped failures dialog. All frame types; default unchecked
+  (full-file I/O). Manual in-app pass pending.
 - **Saves write `zstd+sh` level 19 (2026-08-07)** — benchmark-driven codec switch
   (`docs/2026-08-07-compression-benchmark.md`: −11% vs zlib-SmallestSize on lights, the win
   appears only at zstd's level-15+ strategy switch; zstd-22 adds nothing). AL `Compress` gained
