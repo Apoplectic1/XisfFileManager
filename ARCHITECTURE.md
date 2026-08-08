@@ -79,9 +79,10 @@ deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
   previous zlib-SmallestSize writes on lights; readers need zstd support — NINA 3.x /
   PI ≥ 1.8.9-2 / AL).
   AL's layer also encodes/decodes zlib / lz4 / lz4hc (±shuffle) and all five XISF checksum
-  algorithms; XFM emitted zlib(+sh) until 2026-08-07, so the existing library is predominantly
-  zlib — and **stays zlib**: compressed+checksummed files are never touched (mixed codecs are the
-  accepted end state; the ~26 GB full migration was consciously forgone, 2026-08-07).
+  algorithms; XFM emitted zlib(+sh) until 2026-08-07, so the legacy library is predominantly
+  zlib — and **converges to zstd incrementally**: hygiene recompresses non-zstd codecs on each
+  directory's first browse (`hygiene-recompress-legacy-codecs`, 2026-08-07 — reversed the
+  earlier mixed-codecs-end-state call; full convergence reclaims the benchmark's ~26 GB).
 - `BlockCompressionInfo` — same parse/emit surface, read at load time into `XisfFile.Compression` /
   `IsImageCompressed`. Two deliberate deltas vs the vendored copy: `Parse` **fails fast**
   (`InvalidDataException`) on a malformed attribute for a known codec (previously lenient zeros —
@@ -98,8 +99,11 @@ deleted. Tested in AL (`Astronomy.XISF.Tests`), not here.
 ### Browse-time compression hygiene (browse-compression-hygiene, 2026-08-07)
 
 Every Browse repairs unhygienic files automatically — **always on, no checkbox, exempt from
-PROTECT** (hygiene writes no keywords; Browse is deliberately no longer read-only). Criterion:
-block **uncompressed ∨ no checksum** (`!IsImageCompressed || !Compression.HasChecksum`). Remedy:
+PROTECT** (hygiene writes no keywords; Browse is deliberately no longer read-only). Criterion
+(codec-based since `hygiene-recompress-legacy-codecs`): a block is hygienic only when it is
+**checksummed `zstd`/`zstd+sh`** — uncompressed, checksum-less, and legacy-codec (zlib/lz4)
+blocks all rewrite. The zstd *level* is not recorded in the file, so zstd blocks are trusted as
+target-state (XFM is the library's only zstd writer, always level 19). Remedy:
 in-place rewrite to `zstd+sh(19)` + SHA-1 via AL's **surgical rewriter**
 (`XisfBlockRewriter.RewriteAsync(source, target, codec[, level])`) — XML header byte-preserved
 except `compression`/`checksum`/`location` (+ signature length), block swapped, temp + atomic

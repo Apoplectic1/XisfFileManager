@@ -306,9 +306,11 @@ namespace XisfFileManager
             int noChecksumCount = 0;
             List<string> verifyFailures = new();
 
-            // Compression hygiene rides the read pass (browse-compression-hygiene): any file whose block
-            // is uncompressed or lacks a checksum is rewritten in place as zstd+sh(19) + SHA-1 via the
-            // AL surgical rewriter. Always on, all frame types, exempt from PROTECT (no keyword writes).
+            // Compression hygiene rides the read pass (browse-compression-hygiene, criterion widened by
+            // hygiene-recompress-legacy-codecs): any file whose block is uncompressed, checksum-less, or
+            // compressed with a non-zstd codec is rewritten in place as zstd+sh(19) + SHA-1 via the AL
+            // surgical rewriter — legacy zlib/lz4 converge to the write codec incrementally per browse.
+            // Always on, all frame types, exempt from PROTECT (no keyword writes).
             // Rewrites run on a bounded pool off the UI thread; the browse never completes while one is
             // in flight (barrier below). Cancel abandons queued rewrites; in-flight ones finish (atomic).
             int hygieneDegree = Math.Min(6, Math.Max(2, Environment.ProcessorCount - 2));
@@ -335,7 +337,7 @@ namespace XisfFileManager
                     Label_FileSelection_BrowseFileName.Text =
                         Path.GetDirectoryName(file.FilePath) + "\nCompressing: " + name;
                     Log.Diag("HYGIENE",
-                        $"start {name} compressed={file.IsImageCompressed} checksum={file.Compression.HasChecksum}");
+                        $"start {name} codec={(file.IsImageCompressed ? file.Compression.CodecName : "none")} checksum={file.Compression.HasChecksum}");
 
                     XisfBlockRewriteResult rewrite = await Task.Run(() => XisfBlockRewriter.RewriteAsync(
                         file.FilePath, file.FilePath, BlockCodec.Zstd, XisfConstants.CompressionZstdLevel));
@@ -441,7 +443,12 @@ namespace XisfFileManager
 
                 // Hygiene enqueues strictly after this file's solve (never compress a file out from
                 // under an in-place solve); the pool then runs it alongside later files' front halves.
-                if (!mFile.IsImageCompressed || !mFile.Compression.HasChecksum)
+                // Criterion is codec-based: only checksummed zstd-family blocks are hygienic. The zstd
+                // level is not recorded in the file — XFM is this library's only zstd writer (always
+                // level 19), so zstd blocks are trusted as target-state rather than re-encoded.
+                bool bHygienic = mFile.Compression.Codec is BlockCodec.Zstd or BlockCodec.ZstdSh
+                    && mFile.Compression.HasChecksum;
+                if (!bHygienic)
                 {
                     hygieneTasks.Add(HygieneAsync(mFile));
                 }

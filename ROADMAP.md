@@ -67,6 +67,13 @@
 
 ## Recently shipped
 
+- **Hygiene recompresses legacy codecs (2026-08-07, `hygiene-recompress-legacy-codecs`)** —
+  criterion widened to codec-based: only checksummed `zstd`/`zstd+sh` blocks are hygienic;
+  compressed+checksummed zlib/lz4 now recompress on first browse. Reverses the
+  mixed-codecs-end-state call — the library converges to the write codec incrementally
+  (~8–10 min per legacy target's first browse; full convergence ≈ the benchmark's ~26 GB
+  reclaim). zstd level is not recorded in-file, so zstd blocks are trusted as level-19
+  (XFM is the library's only zstd writer). Manual pass pending.
 - **File-writer refactor (2026-08-07, `refactor-file-writers`)** — `XisfFileUpdate` +
   `XisfFileRename` cleanup ahead of #8: the save-time compression backstop is **removed**
   (hygiene is compression's sole owner; save = gate → keyword rebuild → verbatim block copy →
