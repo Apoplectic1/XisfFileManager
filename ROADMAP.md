@@ -67,6 +67,10 @@
 
 ## Recently shipped
 
+- **Released `v2.4.0` (2026-08-07)** — the day's five archived changes in one cut: compression
+  hygiene + incremental legacy migration, astap.exe solver fix, Verify-SHA browse, index-only
+  sequencing, file-writer cleanup. Carries AL `1.6.0` (`XisfBlockRewriter`, published first per
+  the ordering rule).
 - **Hygiene recompresses legacy codecs (2026-08-07, `hygiene-recompress-legacy-codecs`)** —
   criterion widened to codec-based: only checksummed `zstd`/`zstd+sh` blocks are hygienic;
   compressed+checksummed zlib/lz4 now recompress on first browse. Reverses the
