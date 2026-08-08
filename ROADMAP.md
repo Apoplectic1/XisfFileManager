@@ -73,8 +73,10 @@
   copy source disagrees with the on-disk header or the bytes at the offset don't match the
   declared codec (rule-16 gate; replaced the old alignment warn-and-continue), and (c) makes
   the UPDATE_NEW skip decision against the freshly read on-disk header. Root cause + the
-  2026-06/2026-08 incidents (66 files, all recovered): NOTEBOOK 2026-08-08. Manual pass pending
-  (double-save repro, hex-edited-offset abort, hygiene interplay).
+  2026-06/2026-08 incidents (66 files, all recovered): NOTEBOOK 2026-08-08. Verified: in-app
+  double-save + hygiene-interplay pass (F:\Temp scratch, 58 files) plus the new
+  **`XisfFileManager.Tests`** project (first for this repo — xunit.v3, spec scenarios through the
+  real save; its first run also caught + fixed a latent header-extraction overrun).
 - **Released `v2.4.0` (2026-08-07)** — the day's five archived changes in one cut: compression
   hygiene + incremental legacy migration, astap.exe solver fix, Verify-SHA browse, index-only
   sequencing, file-writer cleanup. Carries AL `1.6.0` (`XisfBlockRewriter`, published first per

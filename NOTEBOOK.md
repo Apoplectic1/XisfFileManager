@@ -24,6 +24,13 @@ analysis-only run had not pushed the damage); Witch Head padding-repaired (parti
 missing high-byte-plane tail rebuilt from the row above — ~527 px on lights, up to ~8 k px on
 noisy 30–60 s Stars frames, bottom rows; user-accepted). Fix shipped as
 `fix-double-save-corruption` (geometry refresh + fail-fast copy gate + on-disk skip check).
+Verification postscript: the change also birthed `XisfFileManager.Tests`, and its **first run
+caught a second latent bug** — `GetString(binaryFileData, xisfStart, xisfEnd)` in the save passes
+an end position where a *count* belongs, overreading the header by `xisfStart` bytes on every
+save since the beginning (harmless-looking on 40 MB files because `FixXisfXml` scrubbed the tail;
+a hard `ArgumentOutOfRangeException` on the 4 KB test fixture, whose all-zero image compresses to
+a 21-byte zstd block). Two latent writer bugs, one day, both found the moment anything actually
+checked the bytes — the argument for the test project makes itself.
 
 ## 2026-08-07 — astap_cli.exe cannot read XISF at all; only astap.exe can
 

@@ -39,11 +39,26 @@
       verify-SHA browse must report all files verified, zero failed
       (2026-08-08 F:\Temp pass: save #1 = 58 Written after solve added WCS, save #2 = 58
       Skipped; all files re-verified geometry+checksum clean out-of-app)
-- [ ] 4.3 Gate test: hex-edit a scratch copy's `location` offset to point into the XML; save
+- [x] 4.3 Gate test: hex-edit a scratch copy's `location` offset to point into the XML; save
       must abort with the contract error and leave the file untouched
+      (2026-08-08: covered twice — a throwaway harness driving the real UpdateFileAsync on
+      library-scale scratch copies, then permanently as automated tests in group 6; both abort
+      shapes verified with files byte-identical after)
 - [x] 4.4 Hygiene interplay: browse a legacy-codec scratch copy (hygiene rewrites) → save →
       save; verify clean (same 2026-08-08 F:\Temp pass — 58 zlib legacies hygiene-rewrote to
       zstd, then the double save; zero failures)
+
+## 6. Test project (scope added mid-apply, user 2026-08-08)
+
+- [x] 6.1 Create `XisfFileManager.Tests` (xunit.v3 3.2.2 + Test.Sdk 18.6.0, warnings-as-errors —
+      Library conventions), referenced fixture `TestData/Unit16_0s_200x200.xisf`, added to sln
+- [x] 6.2 `SaveWriteIntegrityTests`: the four spec scenarios through the real `UpdateFileAsync` —
+      corrupt-offset abort, stale-cache abort, FORCE double-save verified clean, UPDATE_NEW
+      second-save skip (fixtures zstd-compressed in setup via the AL rewriter)
+- [x] 6.3 Fix the latent `GetString(data, xisfStart, xisfEnd)` count bug the first test run
+      exposed (header extraction overran by xisfStart bytes; hard throw on files smaller than
+      xisfStart + xisfEnd)
+- [x] 6.4 VERIFICATION.md rewritten (test section, "no test project" retired) + CLAUDE.md doc-map row
 
 ## 5. Docs (same commit as code — rule 4)
 

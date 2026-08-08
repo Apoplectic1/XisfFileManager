@@ -15,7 +15,7 @@ touches `scheduler.db`.)
 | `ARCHITECTURE.md` | Subsystem mechanics: directory layout, XISF/compression handling, keyword contract, conventions, "adding a feature area" template |
 | `DOMAIN.md` | Astronomy context: frame types/filters, hardware inventory (cameras/telescopes/software), reject workflow, ecosystem position |
 | `ROADMAP.md` | Open follow-ups + recently-shipped digest (git is the changelog) |
-| `VERIFICATION.md` | How to verify a change (no test project — build + manual in-app pass) |
+| `VERIFICATION.md` | How to verify a change (build + `XisfFileManager.Tests` + manual in-app pass for UI) |
 | `NOTEBOOK.md` | Lab notebook: chronological empirical findings |
 | `RELEASING.md` | dev→main flow, `vX.Y.Z` tag-gated local releases (`scripts/release.ps1`), GitHub push policy |
 | `docs/` | Journal: dated records `YYYY-MM-DD-<slug>.md` (investigations, decisions) — discover via glob/grep, not enumerated here. Also holds `FITS Keyword Standards.pdf` (reference asset) |

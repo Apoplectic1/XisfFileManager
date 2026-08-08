@@ -1,7 +1,8 @@
 # Verification
 
-> **Charter:** How to verify a change in this repo. Honest status: there is **no automated test
-> project** — verification is build + manual exercise of the running app.
+> **Charter:** How to verify a change in this repo. Verification is build + automated tests
+> (`XisfFileManager.Tests`, since 2026-08-08) + manual exercise of the running app for
+> UI/visual behavior.
 
 ## Build (code-correct)
 
@@ -14,13 +15,27 @@ enabled repo-wide; the bar is **0 warnings — and enforced**: `<TreatWarningsAs
 (portfolio-wide ratchet), so a new warning is a build break. Fix it, or — rarely, with a comment —
 suppress it deliberately; never turn the ratchet off.
 
+## Test (behavior-correct)
+
+```bash
+dotnet test XisfFileManager.Tests/XisfFileManager.Tests.csproj -c Release
+```
+
+xunit.v3 (same stack + warnings-as-errors discipline as the Library test projects). Tests drive
+real app code against scratch copies of the `TestData/` fixture — e.g. `SaveWriteIntegrityTests`
+exercises `UpdateFileAsync`'s geometry gate, double-save refresh, and skip logic end-to-end (the
+AL rewriter compresses the fixture in setup, so fixtures match library reality). Its very first
+run caught a latent header-extraction overrun (GetString count bug, 2026-08-08) — prefer adding a
+test here over a manual-only pass when the behavior is drivable without the UI. Grow this project
+with every save/file-format change.
+
 ## Run (feature-correct)
 
 ```bash
 dotnet run --project XisfFileManager/XisfFileManager.csproj
 ```
 
-A clean build proves compile-correctness only. UI/behavioral changes need a manual pass in the
+A clean build (and green tests) proves code-level correctness. UI/visual changes need a manual pass in the
 running app — typically: Browse to a folder of real XISF files, exercise the affected tab, and
 Update Keywords to confirm the save path. Sample inputs live in `TestData/`
 (`Unit16_0s_200x200.xisf`, a NINA profile). State explicitly what was build-verified vs. what

@@ -22,6 +22,13 @@ survived every writer generation because nothing ever validated the copy source.
   file's save (rule: no fallback, no warn-and-continue with a corrupt write).
 - **Save-if-needed uses on-disk truth**: `KeywordsMatchXml` compares against the freshly read
   header, not the browse-time `XmlString`, so an unchanged second save skips instead of rewriting.
+- **Test project** (scope added mid-apply, user 2026-08-08): `XisfFileManager.Tests` (xunit.v3,
+  Library conventions) — the spec's scenarios run as automated tests driving the real
+  `UpdateFileAsync` against AL-compressed copies of the `TestData/` fixture. Retires
+  VERIFICATION.md's "no test project" status.
+- **Latent header-extraction overrun fixed**: the first test run exposed a years-old
+  `GetString(data, start, end)` call where the third argument is a *count* — the save read past
+  `</xisf>` on every file (masked by cleanup on large files, a hard crash on small ones).
 
 ## Capabilities
 
@@ -37,7 +44,8 @@ survived every writer generation because nothing ever validated the copy source.
 
 ## Impact
 
-- `XisfFileManager/Files/XisfFileUpdate.cs` — all three changes land here (gate, refresh, skip-check).
-- `XisfFileManager/Files/XisfFile.cs` — possibly a small helper/setter surface for the refresh.
+- `XisfFileManager/Files/XisfFileUpdate.cs` — all three changes land here (gate, refresh, skip-check),
+  plus the GetString count fix.
+- `XisfFileManager.Tests/` — new project (sln member); `VERIFICATION.md`/`CLAUDE.md` updated to match.
 - Callers (`MainForm` save loop, `Calibration`, `FluxDensity`) unchanged — behavior contract only.
 - No back-compat concerns (rule 15); previously corrupted files were already recovered out-of-band.

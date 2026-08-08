@@ -87,8 +87,11 @@ namespace XisfFileManager.Files
                     // NOTE: This value will change AFTER Keyword Replacement a few lines below
                     xisfEnd = BinaryFind(binaryFileData, "</xisf>") + "</xisf>".Length;  // returns the position immediately after '>'                
 
-                    // Convert <xisf to /xisf> to a string and then parse string as xml into a new doc
-                    string xmlString = Encoding.UTF8.GetString(binaryFileData, xisfStart, xisfEnd);
+                    // Convert <xisf to /xisf> to a string and then parse string as xml into a new doc.
+                    // The third argument is a byte COUNT — passing xisfEnd here overran the header by
+                    // xisfStart bytes for years (masked by FixXisfXml on large files; a hard throw on
+                    // files smaller than xisfStart + xisfEnd — caught by the first test-project run).
+                    string xmlString = Encoding.UTF8.GetString(binaryFileData, xisfStart, xisfEnd - xisfStart);
 
                     // ******************************************************************************************
                     // Clean up and validate xmlString
