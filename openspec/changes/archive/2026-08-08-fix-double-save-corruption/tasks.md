@@ -66,4 +66,4 @@
       geometry + aborts on geometry-contract violation); ROADMAP recently-shipped entry
 - [x] 5.2 NOTEBOOK.md entry: the 2026-08-08 corruption incident — signature, arithmetic
       diagnosis, recovery method (server restore + padding repair), link to this change
-- [ ] 5.3 Update memory `xfm-double-save-corruption-bug` to "fixed" once shipped
+- [x] 5.3 Update memory `xfm-double-save-corruption-bug` to "fixed" once shipped (done at archive, 2026-08-08)
