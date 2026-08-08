@@ -83,10 +83,15 @@ git push origin main vX.Y.Z
   (2026-08-06: a drifted shell published TP 1.3.3 assets as XFM v2.2.1; caught and deleted in
   a minute). `release.ps1` is immune — it pins the repo root.
 
-Latest released tag: **`v2.4.0`** (browse-time compression hygiene + incremental legacy-codec
+Latest released tag: **`v2.4.1`** (save write-integrity: the double-save corruption is closed —
+geometry refresh after in-place writes + fail-fast copy gate (abort on stale geometry, never
+write) + on-disk skip decision; fixes the latent header-extraction overrun; first release with
+`XisfFileManager.Tests` (xunit.v3) in the sln; carries AL `1.6.1`, docs-only over `1.6.0`.
+Bookkeeping rides the released commit from this tag on, so the tag sits at height 0). Prior:
+`v2.4.0` (browse-time compression hygiene + incremental legacy-codec
 migration to `zstd+sh(19)`; solver switched to `astap.exe` — `astap_cli` has no XISF reader;
 Verify-SHA browse; index-only sequencing; file-writer cleanup incl. the 4-byte XML-length fix;
-carries AL `1.6.0` — `XisfBlockRewriter`). Prior: `v2.3.0` (filename rotation token folds to
+carries AL `1.6.0` — `XisfBlockRewriter`); `v2.3.0` (filename rotation token folds to
 [0,180) — 0/360 solve jitter and meridian-flip frames share one `S000.x` bucket; naming policy
 only, `OBJCTROT` keeps the true 0–360 PA; carries AL `1.5.2`, a docs-only AL publish); `v2.2.1` (MinVer cross-repo cache
 fix — exe stamps XFM's version again; first annotated tag; adds the release-script stamp gate;
