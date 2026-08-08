@@ -34,13 +34,16 @@
 ## 4. Verify (per VERIFICATION.md — no test project; build + manual pass on copies)
 
 - [x] 4.1 `dotnet build XisfFileManager.sln -c Release` warning-free (0 warnings, 0 errors)
-- [ ] 4.2 Double-save repro on scratch copies: browse (solver on) → save → save again; second
+- [x] 4.2 Double-save repro on scratch copies: browse (solver on) → save → save again; second
       save must skip (no keyword change) — then force a keyword change and save again; a
       verify-SHA browse must report all files verified, zero failed
+      (2026-08-08 F:\Temp pass: save #1 = 58 Written after solve added WCS, save #2 = 58
+      Skipped; all files re-verified geometry+checksum clean out-of-app)
 - [ ] 4.3 Gate test: hex-edit a scratch copy's `location` offset to point into the XML; save
       must abort with the contract error and leave the file untouched
-- [ ] 4.4 Hygiene interplay: browse a legacy-codec scratch copy (hygiene rewrites) → save →
-      save; verify clean
+- [x] 4.4 Hygiene interplay: browse a legacy-codec scratch copy (hygiene rewrites) → save →
+      save; verify clean (same 2026-08-08 F:\Temp pass — 58 zlib legacies hygiene-rewrote to
+      zstd, then the double save; zero failures)
 
 ## 5. Docs (same commit as code — rule 4)
 
