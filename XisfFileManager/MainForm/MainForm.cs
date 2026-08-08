@@ -282,6 +282,11 @@ namespace XisfFileManager
 
         private async Task ReadHeadersAsync()
         {
+            // The Statistics groupbox is a display surface (operation status + hygiene progress live
+            // here) — enable it for the read pass so a long first-browse recompress isn't grayed out.
+            // On a session's first browse it is still disabled from the constructor's UpdateUI(DISABLED).
+            GroupBox_FileSelection_Statistics.Enabled = true;
+
             Label_FileSelection_Statistics_OperationStatus.Text = "Reading " + Files.DirectoryOperations.FileInfoList.Count.ToString() + " Image Files";
             Label_FileSelection_Statistics_TempratureCoefficient.Text = "Temperature Coefficient: Not Computed";
             Label_FileSelection_Statistics_SubFrameOverhead.Text = "SubFrame Overhead: Not Computed";

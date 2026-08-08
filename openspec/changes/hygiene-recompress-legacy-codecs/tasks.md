@@ -3,6 +3,10 @@
 - [x] 1.1 `MainForm.ReadHeadersAsync`: hygiene criterion becomes codec-based — enqueue unless
       the block is checksummed `zstd`/`zstd+sh`; update the hygiene comment block and the
       HYGIENE diag line (log the source codec)
+- [x] 1.2 *(field-found during 3.2)* Enable the Statistics groupbox at read-pass start — a
+      session's first browse previously ran with it grayed (constructor `UpdateUI(DISABLED)`
+      until browse end), invisible when browses were seconds, glaring during a minutes-long
+      first-pass recompress whose progress ticker lives inside that groupbox
 
 ## 2. Docs (same commit)
 
