@@ -18,6 +18,6 @@
 ## 3. Verification
 
 - [x] 3.1 Warning-free `dotnet build XisfFileManager.sln -c Release`
-- [ ] 3.2 Manual pass (user): browse a legacy zlib target → files recompress to `zstd+sh`
+- [x] 3.2 Manual pass (user): browse a legacy zlib target → files recompress to `zstd+sh`
       (header check), re-browse is instant; first-browse duration roughly matches the ~8–10
       min/target expectation

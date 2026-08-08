@@ -53,7 +53,7 @@
 ## 6. Verification
 
 - [x] 6.1 Warning-free `dotnet build XisfFileManager.sln -c Release`
-- [ ] 6.2 Manual pass (user): browse → Update Keywords on a real folder — unchanged files
+- [x] 6.2 Manual pass (user): browse → Update Keywords on a real folder — unchanged files
       skip, a keyword-edited file writes with its block byte-identical (verbatim copy);
       rename pass produces identical filenames to before; a forced failure (e.g. locked
       file) reports via status/log, no popup
