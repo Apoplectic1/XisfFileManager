@@ -5,6 +5,26 @@
 > records (investigations, decisions, reviews) go to `docs/YYYY-MM-DD-<slug>.md` instead; findings
 > that harden into standing truth graduate to `ARCHITECTURE.md` / `DOMAIN.md`.
 
+## 2026-08-08 — double-save corruption: stale geometry cache, arithmetic-exact diagnosis
+
+"Bad checksum" reports on 58 Witch Head P1of4 files (browse log) unraveled into a writer bug
+present in every XFM generation: `UpdateFileAsync` copies the image block from cached
+`TargetAttachmentStart/Length` — set at browse, refreshed after hygiene, **never after a save**.
+The *second* save of a file in one session (header length changed between: solve keywords added,
+target rename) copies from the stale offset: output = N bytes of prior-header XML tail before the
+block + block truncated by N. Fingerprint that cracked it: garbage length == truncation length ==
+(new offset − stale offset), byte-exact on every file (Clamshell: 8244−7020 = 1224, with the
+server's healthy lz4hc copy at hlen 7005 and hygiene's `lz4hc`→`zstd` patch shrinking it by
+exactly 1). Two incidents, 66 files: 2026-06-08 Witch Head (58, pre-refactor writer, damage had
+synced to SKYHAWKSERVER), 2026-08-08 Clamshell P2of6 (8, v2.4.0 — every file written that
+session). 20,329 other library files swept clean — single-save sessions are always correct,
+which is why the bug hid for years; the AL verify/hygiene pass was the first code to ever check
+the bytes. Recovery same day: Clamshell restored losslessly from the server (sync was pending —
+analysis-only run had not pushed the damage); Witch Head padding-repaired (partial zlib inflate,
+missing high-byte-plane tail rebuilt from the row above — ~527 px on lights, up to ~8 k px on
+noisy 30–60 s Stars frames, bottom rows; user-accepted). Fix shipped as
+`fix-double-save-corruption` (geometry refresh + fail-fast copy gate + on-disk skip check).
+
 ## 2026-08-07 — astap_cli.exe cannot read XISF at all; only astap.exe can
 
 Found during the browse-compression-hygiene apply spot-check: `astap_cli.exe`'s image loader

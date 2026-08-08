@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml;
+using Astronomy.XISF.Compression;
 using XisfFileManager.Configuration;
 using Astronomy.Diagnostics;
 using XisfFileManager.Files.XML;
@@ -23,6 +24,9 @@ namespace XisfFileManager.Files
         /// Updates the specified XISF file and writes the changes to a destination path.
         /// The method checks if the file is locked, validates the keyword update mode,
         /// and processes the file's XML content, updating keywords and attachments as needed.
+        /// Structural integrity contract: the block-copy source is validated against the freshly
+        /// read file before anything is written (abort on mismatch, never guess), and a successful
+        /// in-place save refreshes the cached attachment geometry to the file as written.
         /// </summary>
         /// <param name="xFile">The XISF file to update.</param>
         /// <param name="destinationPath">The destination path to write the updated file.</param>
@@ -54,20 +58,6 @@ namespace XisfFileManager.Files
 
             // Normalize keywords before writing (converts CREATOR->SWCREATE, DATE-OBS->DATE-LOC, EXPOSURE->EXPTIME)
             xFile.NormalizeKeywords();
-
-            // "Save if needed": in UPDATE_NEW mode skip when the keywords already match the on-disk XML.
-            // The image block is always copied verbatim — compression is browse-hygiene's job
-            // (AL XisfBlockRewriter), never the save's. FORCE always writes.
-            if (xFile.KeywordUpdateMode == eKeywordUpdateMode.UPDATE_NEW && KeywordsMatchXml(xFile))
-            {
-                LastUpdateOutcome = eUpdateOutcome.Skipped;
-                Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: Skipped (keywords match)");
-                return true;
-            }
-
-            // Committed to writing this file. Report it now — before the write — so the UI shows the
-            // file that is actually being written.
-            onWriting?.Invoke(destinationPath);
 
             int xisfStart;
             int xisfEnd;
@@ -128,6 +118,38 @@ namespace XisfFileManager.Files
 
                     // ******************************************************************************************
 
+                    // "Save if needed": in UPDATE_NEW mode skip when the keywords already match the on-disk
+                    // XML just read — not session-cached header text, which goes stale the moment anything
+                    // else (an earlier save, hygiene, an external tool) rewrites the file. The image block
+                    // is always copied verbatim — compression is browse-hygiene's job (AL XisfBlockRewriter),
+                    // never the save's. FORCE always writes.
+                    if (xFile.KeywordUpdateMode == eKeywordUpdateMode.UPDATE_NEW && KeywordsMatchXml(xFile, xmlString))
+                    {
+                        LastUpdateOutcome = eUpdateOutcome.Skipped;
+                        Log.Info($"Update {Path.GetFileName(xFile.FilePath)}: Skipped (keywords match)");
+                        return true;
+                    }
+
+                    // Committed to writing this file. Report it now — before the write — so the UI shows the
+                    // file that is actually being written.
+                    onWriting?.Invoke(destinationPath);
+
+                    // ******************************************************************************************
+
+                    // Fail-fast geometry gate: the block copy below trusts xFile.TargetAttachment* against the
+                    // bytes just read. A stale cache here writes a silently corrupt file (garbage prepended,
+                    // block tail truncated — the 2026-06/2026-08 double-save incidents), so a violation aborts
+                    // this file's save; it never falls back to scanning or writes anyway.
+                    string? geometryError = ValidateBlockCopySource(binaryFileData, xisfEnd, xmlString, xFile);
+                    if (geometryError != null)
+                    {
+                        LastUpdateOutcome = eUpdateOutcome.Failed;
+                        Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (geometry contract) — {geometryError}");
+                        return false;
+                    }
+
+                    // ******************************************************************************************
+
                     // Create an Xml Document from the xmlString with the proper namespace
                     XmlDocument xmlDoc = new XmlDocument();
                     XmlNamespaceManager namespaceManager = new XmlNamespaceManager(xmlDoc.NameTable);
@@ -155,16 +177,6 @@ namespace XisfFileManager.Files
 
                     // We need to set the start address and length of the image attachement due to any changes in the <xisf> to </xisf> length
                     // (the image block itself is always copied verbatim — compression is browse-hygiene's job).
-
-                    if (xFile.BlockAlignmentSize != -1)
-                    {
-                        int possibleBogusImageAttachmentLocation = FindExistingImageStartingLocation(binaryFileData);
-                        if (possibleBogusImageAttachmentLocation % xFile.BlockAlignmentSize != 0)
-                        {
-                            if ((possibleBogusImageAttachmentLocation - 1) % xFile.BlockAlignmentSize != 0)
-                                Log.Warn($"Update {Path.GetFileName(xFile.FilePath)}: image attachment start not block-aligned; continuing");
-                        }
-                    }
                     xFile.TargetAttachmentPadding = SetImageAttachmentLocation(xmlDoc, xFile);
 
                     // *******************************************************************************************************************************
@@ -240,6 +252,18 @@ namespace XisfFileManager.Files
                         LastUpdateOutcome = eUpdateOutcome.Failed;
                         Log.Error($"Update {Path.GetFileName(xFile.FilePath)}: Failed (binary write)");
                         return false;
+                    }
+
+                    // The file on disk just changed layout; an in-place save must leave the cached geometry
+                    // describing the file as written, or the next save of this file copies the block from a
+                    // stale offset (the double-save corruption). Values come from the exact buffers written:
+                    // signature + xmlLength + padding is where the block landed; its length is unchanged
+                    // (verbatim copy). Copy-out saves (Calibration, FluxDensity) leave the source untouched,
+                    // so their cache stays valid as-is.
+                    if (string.Equals(destinationPath, xFile.FilePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        xFile.TargetAttachmentStart = XisfConstants.SignatureSize + xmlLength + xFile.TargetAttachmentPadding;
+                        xFile.XmlString = Xml.XisfFile_XisfBlockRx.Match(xmlDoc.OuterXml).Value;
                     }
 
                     LastUpdateOutcome = eUpdateOutcome.Written;
@@ -318,33 +342,53 @@ namespace XisfFileManager.Files
         // ****************************************************************************************************
 
         /// <summary>
-        /// Finds the starting location of existing image data in the binary file data.
-        /// It identifies the end of the XML section, then skips any padding (runs of 0's) after the </xisf> tag,
-        /// returning the location of the first non-zero byte after the </xisf> tag.
+        /// Verifies that the cached copy source (xFile.TargetAttachmentStart/Length) matches the file
+        /// just read: it must equal the on-disk header's declared location, lie past the on-disk XML,
+        /// fit inside the file, and (for zlib/zstd blocks) start with the codec's magic bytes.
+        /// Returns null when valid, or a message describing the contract violation. Never repairs —
+        /// the caller aborts the save on any non-null return.
         /// </summary>
-        /// <param name="binaryFileData">The binary file data to search.</param>
-        /// <returns>The location of the first non-zero byte after the </xisf> tag.</returns>
-        public static int FindExistingImageStartingLocation(byte[] binaryFileData)
+        private static string? ValidateBlockCopySource(byte[] binaryFileData, int xmlEnd, string xmlString, XisfFile xFile)
         {
-            // Find the end of the </xisf> tag in the binary file data
-            int xmlEndLocation = BinaryFind(binaryFileData, "</xisf>") + "</xisf>".Length;
+            (int diskStart, int diskLength, _, _) = Xml.GetImageExtents(xmlString, "integration");
 
-            // Walk through any padding (runs of 0's) after the </xisf> tag
-            int padding = 0;
-            for (int i = xmlEndLocation; i < binaryFileData.Length; i++)
+            if (xFile.TargetAttachmentStart != diskStart || xFile.TargetAttachmentLength != diskLength)
             {
-                if (binaryFileData[i] == 0)
-                {
-                    padding++;
-                }
-                else
-                {
-                    break;
-                }
+                return $"cached geometry ({xFile.TargetAttachmentStart}:{xFile.TargetAttachmentLength}) does not match "
+                     + $"the on-disk header ({diskStart}:{diskLength}) — stale cache; re-browse before saving";
             }
 
-            // Return the location of the first non-zero byte after the </xisf> tag
-            return xmlEndLocation + padding;
+            if (diskStart < xmlEnd)
+                return $"declared block offset {diskStart} lies inside the XML header (ends {xmlEnd})";
+
+            if (diskLength <= 0 || (long)diskStart + diskLength > binaryFileData.Length)
+                return $"declared block ({diskStart}:{diskLength}) extends past the {binaryFileData.Length}-byte file";
+
+            (_, _, BlockCompressionInfo diskCompression) = Xml.GetImageBlockInfo(xmlString, "integration");
+            switch (diskCompression.Codec)
+            {
+                case BlockCodec.Zlib:
+                case BlockCodec.ZlibSh:
+                    if (binaryFileData[diskStart] != 0x78
+                        || binaryFileData[diskStart + 1] is not (0x9C or 0xDA or 0x01 or 0x5E))
+                        return $"expected a zlib block at offset {diskStart} but found bytes "
+                             + $"{binaryFileData[diskStart]:X2} {binaryFileData[diskStart + 1]:X2}";
+                    break;
+
+                case BlockCodec.Zstd:
+                case BlockCodec.ZstdSh:
+                    if (binaryFileData[diskStart] != 0x28 || binaryFileData[diskStart + 1] != 0xB5
+                        || binaryFileData[diskStart + 2] != 0x2F || binaryFileData[diskStart + 3] != 0xFD)
+                        return $"expected a zstd block at offset {diskStart} but found bytes "
+                             + $"{binaryFileData[diskStart]:X2} {binaryFileData[diskStart + 1]:X2} "
+                             + $"{binaryFileData[diskStart + 2]:X2} {binaryFileData[diskStart + 3]:X2}";
+                    break;
+
+                // lz4 frames and uncompressed blocks have no reliable magic — the structural checks above
+                // still catch the actual failure signature (offset inside the XML / truncated block).
+            }
+
+            return null;
         }
 
 
@@ -484,16 +528,18 @@ namespace XisfFileManager.Files
         // ****************************************************************************************************
 
         /// <summary>
-        /// Checks if the FITS keywords in the XISF file match the keywords in the XML string.
-        /// The method compares the keywords in the XISF file with the FITSKeyword elements in the XML document.
+        /// Checks if the FITS keywords in the XISF file match the FITSKeyword elements in the given
+        /// XML header text — the header freshly read from disk, so the skip decision reflects the
+        /// file's current content rather than session-cached state.
         /// </summary>
-        /// <param name="xFile">The XISF file containing the keywords and XML string.</param>
+        /// <param name="xFile">The XISF file containing the keywords.</param>
+        /// <param name="xmlString">The on-disk XML header text just read (post-cleanup).</param>
         /// <returns>True if the keywords match the XML FITSKeyword elements; otherwise, false.</returns>
-        private static bool KeywordsMatchXml(XisfFile xFile)
+        private static bool KeywordsMatchXml(XisfFile xFile, string xmlString)
         {
             // Load the XML string into an XmlDocument
             XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.LoadXml(xFile.XmlString);
+            xmlDoc.LoadXml(xmlString);
 
             // Create an XmlNamespaceManager and add the necessary namespace
             XmlNamespaceManager namespaceManager = new XmlNamespaceManager(xmlDoc.NameTable);

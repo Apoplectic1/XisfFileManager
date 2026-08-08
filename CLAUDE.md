@@ -36,9 +36,14 @@ dotnet run --project XisfFileManager/XisfFileManager.csproj
   FOCALLEN and APTDIA must be written first.
 - **`XisfFileUpdate.UpdateFileAsync` is save-if-needed:** `PROTECT` never writes (enforced inside
   the method; deliberate write paths like Calibration/FluxDensity set `FORCE` first); `UPDATE_NEW`
-  writes when keywords changed; `FORCE` always writes. The image block is always copied
-  **verbatim** — compression happens only in browse hygiene. Saves rewrite files in place
-  (temp file + atomic move) — see cautions in `VERIFICATION.md`.
+  writes when keywords changed (compared against the freshly read on-disk header); `FORCE` always
+  writes. The image block is always copied **verbatim** — compression happens only in browse
+  hygiene. Saves rewrite files in place (temp file + atomic move) — see cautions in
+  `VERIFICATION.md`. **Geometry contract (2026-08-08):** the block-copy source is validated
+  against the on-disk header + codec magic before writing (mismatch aborts the file's save —
+  never weaken this to a warn), and a successful in-place save refreshes the cached
+  `TargetAttachmentStart`/`XmlString`; both guard against the double-save corruption
+  (NOTEBOOK 2026-08-08).
 - **Browse writes files (2026-08-07):** compression hygiene rewrites any uncompressed or
   checksum-less block in place during every browse — always on, exempt from PROTECT (no keyword
   writes; hygiene bypasses `UpdateFileAsync` entirely). Point Browse at copies when testing.
