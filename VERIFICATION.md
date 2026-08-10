@@ -15,6 +15,12 @@ enabled repo-wide; the bar is **0 warnings — and enforced**: `<TreatWarningsAs
 (portfolio-wide ratchet), so a new warning is a build break. Fix it, or — rarely, with a comment —
 suppress it deliberately; never turn the ratchet off.
 
+**Trap — new AL `ProjectReference` without a sln entry fails silently.** The sln lists the cross-repo
+AL projects *explicitly*; MSBuild follows a new csproj `ProjectReference` regardless, so the build
+stays green while Solution Explorer silently omits the project (bit all three apps 2026-08-10 when
+AL's Diagnostics grew its `.Windows` layer). When adding an AL project reference, add the matching
+sln `Project` entry + config rows (reuse the Library sln's project GUID) in the same commit.
+
 ## Test (behavior-correct)
 
 ```bash
