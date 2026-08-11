@@ -67,6 +67,8 @@
 
 ## Recently shipped
 
+- **Released `v2.4.3` (2026-08-11)** — the Ctrl+N wiring swap below, as a cut; carries AL
+  `1.8.0` (`DiagnosticsHotkey`).
 - **Ctrl+N wiring → shared `DiagnosticsHotkey` (2026-08-11)** — the `ProcessCmdKey` override is
   gone; the MainForm ctor calls `Astronomy.Diagnostics.WinForms.DiagnosticsHotkey.Register` (AL
   `f7d1423`), the Library's app-level message filter. Behavior identical today (XFM has no menus

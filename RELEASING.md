@@ -83,7 +83,13 @@ git push origin main vX.Y.Z
   (2026-08-06: a drifted shell published TP 1.3.3 assets as XFM v2.2.1; caught and deleted in
   a minute). `release.ps1` is immune — it pins the repo root.
 
-Latest released tag: **`v2.4.1`** (save write-integrity: the double-save corruption is closed —
+Latest released tag: **`v2.4.3`** (Ctrl+N wiring swapped to AL's shared `DiagnosticsHotkey`
+app-level message filter — `ProcessCmdKey` override gone, routing portfolio-uniform with TP and
+future-proof for any MenuStrip / managed modal dialog XFM grows; capture stays at OK time, the
+recorded portfolio contract. Carries AL `1.8.0`). Prior:
+`v2.4.2` (rebuilt on AL `1.7.0` diagnostics platform layering; sln gains
+`Astronomy.Diagnostics.Windows`; app unchanged otherwise — this tag's bookkeeping was folded
+late, with v2.4.3); `v2.4.1` (save write-integrity: the double-save corruption is closed —
 geometry refresh after in-place writes + fail-fast copy gate (abort on stale geometry, never
 write) + on-disk skip decision; fixes the latent header-extraction overrun; first release with
 `XisfFileManager.Tests` (xunit.v3) in the sln; carries AL `1.6.1`, docs-only over `1.6.0`.
