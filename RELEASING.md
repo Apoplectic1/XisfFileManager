@@ -83,10 +83,14 @@ git push origin main vX.Y.Z
   (2026-08-06: a drifted shell published TP 1.3.3 assets as XFM v2.2.1; caught and deleted in
   a minute). `release.ps1` is immune — it pins the repo root.
 
-Latest released tag: **`v2.4.3`** (Ctrl+N wiring swapped to AL's shared `DiagnosticsHotkey`
+Latest released tag: **`v2.4.4`** (AL-realignment cut: carries AL `1.9.0` — the IS-gap Core trio
+(`UtcInterval`+`Intervals`, `Meridian`, `IClock`), scanner fail-fast on coordinate-less units,
+contract pins #26–#29 incl. the XFM-baked XISF codec + `WcsOrientation` semantics now bench-pinned.
+XFM code unchanged). Prior:
+`v2.4.3` (Ctrl+N wiring swapped to AL's shared `DiagnosticsHotkey`
 app-level message filter — `ProcessCmdKey` override gone, routing portfolio-uniform with TP and
 future-proof for any MenuStrip / managed modal dialog XFM grows; capture stays at OK time, the
-recorded portfolio contract. Carries AL `1.8.0`). Prior:
+recorded portfolio contract. Carries AL `1.8.0`);
 `v2.4.2` (rebuilt on AL `1.7.0` diagnostics platform layering; sln gains
 `Astronomy.Diagnostics.Windows`; app unchanged otherwise — this tag's bookkeeping was folded
 late, with v2.4.3); `v2.4.1` (save write-integrity: the double-save corruption is closed —
