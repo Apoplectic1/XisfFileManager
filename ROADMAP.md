@@ -67,6 +67,12 @@
 
 ## Recently shipped
 
+- **Ctrl+N wiring → shared `DiagnosticsHotkey` (2026-08-11)** — the `ProcessCmdKey` override is
+  gone; the MainForm ctor calls `Astronomy.Diagnostics.WinForms.DiagnosticsHotkey.Register` (AL
+  `f7d1423`), the Library's app-level message filter. Behavior identical today (XFM has no menus
+  or managed modal dialogs), but the routing now also covers any future MenuStrip / modal-dialog
+  state by construction — portfolio-uniform with TP; capture stays at OK time (the portfolio
+  contract, AL CHANGELOG 2026-08-11).
 - **Save write-integrity fix (2026-08-08, `fix-double-save-corruption`)** — the double-save
   corruption is closed: `UpdateFileAsync` now (a) refreshes cached attachment geometry +
   `XmlString` after every successful in-place write, (b) aborts before writing if the cached

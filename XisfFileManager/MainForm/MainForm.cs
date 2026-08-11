@@ -56,6 +56,12 @@ namespace XisfFileManager
         public MainForm()
         {
             InitializeComponent();
+
+            // Ctrl+N opens (or focuses) the shared diagnostics dialog. The Library's hotkey
+            // wiring (app-level message filter) covers MenuStrip menu mode + modal WinForms
+            // dialogs — states a ProcessCmdKey override misses; portfolio-uniform with TP.
+            DiagnosticsHotkey.Register(this, GetDiagnosticsContext);
+
             CalibrationTabPageEvent.CalibrationTabPage_InvokeEvent += EventHandler_UpdateCalibrationPageForm;
 
             mCalibration = new Calibration();
@@ -940,18 +946,6 @@ namespace XisfFileManager
                 Button_FileSelection_DirectorySelection_FluxDensity_Run.Enabled = false;
                 CheckBox_FileSlection_DirectorySelection_NoStatistics.Checked = noStaticsState;
             }
-        }
-
-        // Ctrl+N opens (or focuses) the shared diagnostics dialog (Astronomy.Diagnostics.WinForms).
-        // Modeless + TopMost; USER_OBS_START/END/CANCEL markers in xfm.log bracket the observation.
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        {
-            if (keyData == (Keys.Control | Keys.N))
-            {
-                DiagnosticsDialog.ShowOrFocus(this, GetDiagnosticsContext);
-                return true;
-            }
-            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         // App-state snapshot for the USER_OBS_END line — the report carries the session context
